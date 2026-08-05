@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adam Leipold</title>
+<meta name="description" content="Adam Leipold">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --fg: #16150f;
+    --muted: #6b6a63;
+    --rule: #e3e2dd;
+    --link: #16150f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16150f;
+      --fg: #f0efe9;
+      --muted: #9b9a92;
+      --rule: #2c2b24;
+      --link: #f0efe9;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    padding: clamp(2rem, 8vw, 6rem) clamp(1.25rem, 5vw, 2rem);
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  /* ---------------------------------------------------------------
+     Copy goes here. Drop paragraphs directly inside <main>, below
+     the <h1>. Styles below are already wired for p / ul / a.
+     --------------------------------------------------------------- */
+
+  p { margin: 1.25rem 0 0; }
+
+  p.lead { color: var(--muted); }
+
+  a {
+    color: var(--link);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  a:hover { text-decoration-thickness: 2px; }
+
+  a:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ul.links {
+    margin: 2rem 0 0;
+    padding: 1.5rem 0 0;
+    border-top: 1px solid var(--rule);
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    font-size: 0.9375rem;
+  }
+</style>
+</head>
+<body>
+  <main>
+    <h1>Adam Leipold</h1>
+
+    <!-- Copy pending. Paragraphs and a <ul class="links"> go here. -->
+  </main>
+</body>
+</html>
