@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adam Leipold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#05070F;
+  --night:#0A0F24;
+  --indigo:#131B3D;
+  --valley:#2E4E82;
+  --robe:#6B4A87;
+  --gold:#F0C24B;
+  --gold-dim:#8A6B24;
+  --bone:#DEE3F0;
+  --bone-dim:#7C88A8;
+  --edge:rgba(46,78,130,.28);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html{-webkit-text-size-adjust:100%}
+
+body{
+  background:var(--void);
+  color:var(--bone);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-weight:300;
+  line-height:1.6;
+  overflow-x:hidden;
+}
+
+/* ---- the single light source ---- */
+.field{
+  position:relative;
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:clamp(1.75rem,6vw,6rem);
+  isolation:isolate;
+}
+.field::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  left:var(--lx,42%);
+  top:var(--ly,52%);
+  width:min(150vw,1500px);
+  aspect-ratio:1;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,
+    rgba(240,194,75,.15) 0%,
+    rgba(107,74,135,.13) 22%,
+    rgba(19,27,61,.55) 45%,
+    rgba(5,7,15,0) 70%);
+  opacity:0;
+  animation:kindle 2600ms cubic-bezier(.16,.7,.3,1) 200ms forwards;
+}
+
+@keyframes kindle{to{opacity:1}}
+@keyframes rise{to{opacity:1;transform:none}}
+
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:.72rem;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--bone-dim);
+  opacity:0;
+  transform:translateY(10px);
+  animation:rise 1100ms ease-out 700ms forwards;
+}
+
+.statement{
+  font-family:"Instrument Serif",Georgia,serif;
+  font-weight:400;
+  font-size:clamp(2.5rem,7.4vw,5.6rem);
+  line-height:1.04;
+  letter-spacing:-.015em;
+  max-width:19ch;
+  margin:clamp(1.5rem,3vw,2.5rem) 0;
+  opacity:0;
+  transform:translateY(16px);
+  animation:rise 1500ms cubic-bezier(.16,.7,.3,1) 1000ms forwards;
+}
+
+/* the one gold element on the page */
+.lit{
+  color:var(--gold);
+  font-style:italic;
+  text-shadow:0 0 38px rgba(240,194,75,.45),0 0 90px rgba(240,194,75,.18);
+}
+
+.invitation{
+  opacity:0;
+  transform:translateY(12px);
+  animation:rise 1200ms ease-out 1900ms forwards;
+}
+.invitation a{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:.9rem;
+  letter-spacing:.1em;
+  color:var(--bone);
+  text-decoration:none;
+  border-bottom:1px solid var(--gold-dim);
+  padding-bottom:.35rem;
+  transition:border-color .35s ease,color .35s ease;
+}
+.invitation a:hover,
+.invitation a:focus-visible{color:#fff;border-color:var(--gold)}
+.invitation .arrow{display:inline-block;transition:transform .35s ease}
+.invitation a:hover .arrow{transform:translateX(5px)}
+
+/* ---- quiet depth below ---- */
+.paths{
+  border-top:1px solid var(--edge);
+  padding:clamp(3rem,8vw,7rem) clamp(1.75rem,6vw,6rem) clamp(4rem,10vw,9rem);
+  background:linear-gradient(var(--night),var(--void));
+}
+.paths h2{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:.72rem;
+  font-weight:400;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--bone-dim);
+  margin-bottom:2.5rem;
+}
+.paths ul{list-style:none;max-width:52rem}
+.paths li{border-bottom:1px solid var(--edge)}
+.paths a{
+  display:flex;
+  align-items:baseline;
+  gap:1.25rem;
+  padding:1.1rem 0;
+  color:var(--bone);
+  text-decoration:none;
+  transition:color .3s ease,padding-left .3s ease;
+}
+.paths a:hover,
+.paths a:focus-visible{color:#fff;padding-left:.6rem}
+.paths .word{
+  font-family:"Instrument Serif",Georgia,serif;
+  font-size:clamp(1.5rem,3.6vw,2.1rem);
+  line-height:1.1;
+}
+.paths .gloss{
+  font-size:.86rem;
+  color:var(--bone-dim);
+  margin-left:auto;
+  text-align:right;
+}
+
+.closer{
+  padding:0 clamp(1.75rem,6vw,6rem) clamp(4rem,9vw,7rem);
+  color:var(--bone-dim);
+  font-size:.9rem;
+  letter-spacing:.02em;
+}
+.closer em{font-family:"Instrument Serif",Georgia,serif;font-size:1.15rem;color:var(--bone);font-style:italic}
+
+:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:2px}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<main class="field">
+  <p class="eyebrow">Adam Leipold &nbsp;·&nbsp; Houston</p>
+
+  <h1 class="statement">
+    I've been riding the wave of technology since 1978.
+    Every bit of it arrived <span class="lit">on time</span>.
+  </h1>
+
+  <p class="invitation">
+    <a href="#paths">Start where I started <span class="arrow">&rarr;</span></a>
+  </p>
+</main>
+
+<section class="paths" id="paths">
+  <h2>Many paths · One life</h2>
+  <ul>
+    <li><a href="#"><span class="word">Build</span><span class="gloss">Fifty years of systems</span></a></li>
+    <li><a href="#"><span class="word">Lead</span><span class="gloss">The people part</span></a></li>
+    <li><a href="#"><span class="word">Believe</span><span class="gloss">What holds it together</span></a></li>
+    <li><a href="#"><span class="word">Reflect</span><span class="gloss">Written most mornings</span></a></li>
+    <li><a href="#"><span class="word">Live</span><span class="gloss">Houston, and before</span></a></li>
+    <li><a href="#"><span class="word">Create</span><span class="gloss">Things I keep making</span></a></li>
+    <li><a href="#"><span class="word">Become</span><span class="gloss">Still underway</span></a></li>
+  </ul>
+</section>
+
+<footer class="closer">
+  <p><em>Built piece by peace.</em></p>
+</footer>
+
+</body>
+</html>

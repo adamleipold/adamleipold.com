@@ -1,0 +1,27 @@
+:root{
+  /* Pigment — sampled from Tobey, 'Jesus in Prayer' (color-corrected) */
+  --gethsemane-void: #010109;  /* Darkest night, edges of the garden */
+  --sky-indigo: #1C3C6A;  /* Upper night sky */
+  --valley-cerulean: #0A74BF;  /* Moonlit Jerusalem below */
+  --moon-gold: #DFD7AC;  /* The moon itself */
+  --cloud-gold: #AFAD84;  /* Moonstruck cloud edges */
+  --hair-gold: #D98755;  /* The same gold, in the figure */
+  --robe-purple: #795DAD;  /* The cloak, lit */
+  --robe-purple-deep: #2E1E53;  /* The cloak, in shadow */
+  --robe-white: #DAD9D5;  /* Inner garment */
+  --skin-warm: #E0765D;  /* Face and hands */
+  --foliage-green: #1B342E;  /* Cypress and garden */
+  --rock-slate: #3E615F;  /* The stone he sits on */
+  --ember: #D07553;  /* Seven window lights in the valley */
+
+  /* Screen — derived for UI, contrast-checked on --bg-void */
+  --bg-void: #05060E;  /* Page background (void, lifted off pure black) */
+  --bg-night: #0B1226;  /* Raised surfaces */
+  --edge: #22355C;  /* Hairlines and borders */
+  --text-bone: #D8DCE8;  /* Body text — 14.8:1 */
+  --text-dim: #8291AC;  /* Secondary text — 6.4:1 */
+  --accent-moon: #E9D9A6;  /* THE gold. One element per view — 14.4:1 */
+  --accent-moon-hot: #EFCB6B;  /* Hover/active state of the gold — 12.9:1 */
+  --link-cerulean: #3E9BE0;  /* Links, from the valley — 6.7:1 */
+  --accent-robe: #8F74C6;  /* Rare purple accent — 5.3:1, large text/icons */
+}

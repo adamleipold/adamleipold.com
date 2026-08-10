@@ -1,0 +1,29 @@
+{
+  "source": "Alton S. Tobey, 'Jesus in Prayer' — perspective-corrected, white-balanced scan of print",
+  "pigment": {
+    "gethsemane-void": {"hex": "#010109", "note": "Darkest night, edges of the garden"},
+    "sky-indigo": {"hex": "#1C3C6A", "note": "Upper night sky"},
+    "valley-cerulean": {"hex": "#0A74BF", "note": "Moonlit Jerusalem below"},
+    "moon-gold": {"hex": "#DFD7AC", "note": "The moon itself"},
+    "cloud-gold": {"hex": "#AFAD84", "note": "Moonstruck cloud edges"},
+    "hair-gold": {"hex": "#D98755", "note": "The same gold, in the figure"},
+    "robe-purple": {"hex": "#795DAD", "note": "The cloak, lit"},
+    "robe-purple-deep": {"hex": "#2E1E53", "note": "The cloak, in shadow"},
+    "robe-white": {"hex": "#DAD9D5", "note": "Inner garment"},
+    "skin-warm": {"hex": "#E0765D", "note": "Face and hands"},
+    "foliage-green": {"hex": "#1B342E", "note": "Cypress and garden"},
+    "rock-slate": {"hex": "#3E615F", "note": "The stone he sits on"},
+    "ember": {"hex": "#D07553", "note": "Seven window lights in the valley"}
+  },
+  "screen": {
+    "bg-void": {"hex": "#05060E", "note": "Page background (void, lifted off pure black)"},
+    "bg-night": {"hex": "#0B1226", "note": "Raised surfaces"},
+    "edge": {"hex": "#22355C", "note": "Hairlines and borders"},
+    "text-bone": {"hex": "#D8DCE8", "note": "Body text — 14.8:1"},
+    "text-dim": {"hex": "#8291AC", "note": "Secondary text — 6.4:1"},
+    "accent-moon": {"hex": "#E9D9A6", "note": "THE gold. One element per view — 14.4:1"},
+    "accent-moon-hot": {"hex": "#EFCB6B", "note": "Hover/active state of the gold — 12.9:1"},
+    "link-cerulean": {"hex": "#3E9BE0", "note": "Links, from the valley — 6.7:1"},
+    "accent-robe": {"hex": "#8F74C6", "note": "Rare purple accent — 5.3:1, large text/icons"}
+  }
+}
