@@ -1,61 +1,58 @@
 # adamleipold.com
 
-Personal site. Static HTML, no build step. The homepage is Tobey's
-*Jesus in Prayer* receded to atmosphere, with Adam's statement resolving
-into it — see `docs/copy-deck.md` (copy source of truth, verbatim) and
-`docs/homepage-brief.md` (design brief).
+Static HTML on Vercel, no build step.
 
-## Layout
+## Status — no UI, deliberately
+
+The site's UI was removed on 2026-08-10. `index.html` is a holding page
+and nothing else is published. It stays that way until Adam has
+something he wants to publish here.
+
+Two homepage directions were built and both are retired: the
+painting-led concept D (context decision 0014) and a hand-drawn SVG
+garden (context decision 0016). The site's public direction is now
+project-led — context decision 0015 — and that design does not exist
+yet.
+
+Do not restore either old homepage. Do not build a new one
+speculatively. The next UI starts from Adam's decision about what he is
+publishing.
+
+## What the repo keeps
 
 ```
-index.html            the homepage; resolves on load, then breathes
-writing/<slug>.html   permanent authored pages (long-form, image-capable)
-daily/                dated thread; ships empty, first entry is Adam's
-css/site.css          all styles; tokens are the gethsemane screen tier
-css/gethsemane-palette.{css,json}   palette reference (pigment + screen)
-fonts/                self-hosted woff2 (CSP forbids external hosts)
-images/               painting assets + og card
-scripts/prepare_painting.py         regenerates painting assets from the original photo
-docs/                 briefs, copy deck, review notes, reference comps
-vercel.json           headers, clean URLs, CSP
+index.html                     holding page, no design
+images/                        painting web sizes (2400/1200), OG card
+css/gethsemane-palette.css     colour tokens — pigment + screen tiers
+css/gethsemane-palette.json    the same, machine-readable
+fonts/                         self-hosted woff2 (CSP forbids external hosts)
+scripts/prepare_painting.py    regenerates painting assets from the original photo
+_drafts/                       Adam's writing, markdown source of truth
+docs/                          briefs, copy deck, review notes, reference comps
+vercel.json                    headers, clean URLs, CSP
 ```
 
-## Rules that bind edits
+The **screen tier** of `gethsemane-palette` is the site's working colour
+set; the **pigment tier** is for art direction. Both are sampled from
+Alton S. Tobey's *Jesus in Prayer*, which Tobey painted for Adam. Adam
+owns the original and holds reproduction rights from David Tobey and
+Todd Anderson; any public use is a deliberate decision and always
+attributes the work to Alton S. Tobey.
 
-- **Copy is Adam's, verbatim.** The statement, sub-statement, stations,
-  and taglines come from `docs/copy-deck.md`. Never edit, tighten, or
-  spell-correct ("piece by peace" is intentional).
-- **Testimony is Adam's voice only.** The four slots (The Wave, 4:30 AM,
-  MD Anderson, Line Upon Line) ship as visible placeholders. No AI
-  drafting, ever.
-- **Gold appears once per view.** The lit phrase on the homepage; the
-  drop cap on a writing page. If gold shows twice on a screen, it has
-  stopped meaning something.
-- **No external assets.** CSP is `default-src 'self'`. Fonts and images
-  live in this repo. External references fail silently in production.
-- **The painting keeps Tobey's monogram.** Never crop or retouch it out.
-  Attribution rides in the page foot: Alton S. Tobey · "Jesus in Prayer".
-- **Motion respects `prefers-reduced-motion`** — everything stops.
+`_drafts/` holds two finished pieces — *The God of Perfect Timing* and
+*AI Is Not a Surprise to the Architect*. They are written and ready.
+They are not currently published because there is no site to publish
+them into.
 
 ## Deploying
 
 Vercel serves the repo root as-is: framework preset **Other**, build
-command and output directory both empty.
+command and output directory both empty. Pushes to `main` publish to
+production; any other branch produces a preview URL.
 
-- Pushes to the production branch publish to adamleipold.com.
-- Pushes to any other branch produce a preview deploy on a generated URL.
+## Governing records
 
-## Adding content
-
-- **A writing:** drop the markdown in `_drafts/`, convert into the
-  `<article class="piece-body">` of its page per the inline notes,
-  delete the `.awaiting` block.
-- **A daily entry:** `/daily/YYYY-MM-DD.html`, then surface its title as
-  the one quiet dated line on the homepage (slot is marked in
-  `index.html`). Remove `noindex` from `/daily` with the first entry.
-
-## Stack
-
-Static HTML is deliberate — no build step to break, no dependencies to
-age. If the daily thread makes hand-conversion tiresome, Astro is the
-agreed upgrade path (see `docs/homepage-brief.md`, agentic layer).
+The site is governed by the private `context` repo, not by this README.
+Relevant decisions: 0008 site purpose, 0010 devotionals as permanent
+pages, 0014 concept D (superseded), 0015 project-led direction, 0016
+photoreal scenes are sourced rather than hand-drawn.
