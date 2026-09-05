@@ -18,7 +18,9 @@
    an authored point — the moon — whenever no pointer is on the page;
    0.2.3: the painting lifts slowly as the rest of its words scroll past;
    0.2.4: on a phone the words' scroll dissolves the painting, slowly, all
-   the way to the cloud — the flight spans the words' leaving, then waits).
+   the way to the cloud — the flight spans the words' leaving, then waits;
+   0.2.5: the step the reader rests on is marked on its element, class
+   glyph-here, so the page can time its own motion to their arrival).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -57,7 +59,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.4';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.5';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -811,10 +813,11 @@ async function boot(D,img){
      line the painting stands on (stepView fits the painting above it) and the line every
      later block of scene words seats its top on at its anchor — the words never climb the
      painting where the reader stops. −1 = wide layout or a 0.1 document: the fixed fit. */
+  let liveEls=[], hereK=-1;      // the live steps' elements; the step the key rests on (class glyph-here)
   let wordsLine=-1, liftK=-1;   // liftK: the step of the last block of scene words — the lift starts at its anchor
   function measure(){
     const V=probe.offsetHeight||innerHeight, narrow=narrowMQ.matches;
-    const live=[], anc=[], leave=[];
+    const live=[], anc=[], leave=[], els=[];
     wordsLine=-1; liftK=-1;
     stepEls.forEach((el,i)=>{
       if(!el.isConnected||el.getClientRects().length===0){
@@ -827,7 +830,7 @@ async function boot(D,img){
           lv=wordsLine+rb.height+0.5*V; }        // the scroll past its anchor until the block has left, plus half a screen
         else a=top+rb.height/2-V*0.72; }
       else a=r.top+r.height/2+scrollY-V/2;
-      live.push(stepScene[i]); anc.push(a); leave.push(lv); });
+      live.push(stepScene[i]); anc.push(a); leave.push(lv); els.push(el); });
     if(!live.length){ live.push(fallbackK); anc.push(0); }
     // every anchor inside the reachable scroll range, strictly increasing, the last one reachable
     const max=Math.max(0,document.documentElement.scrollHeight-innerHeight), n=anc.length;
@@ -835,7 +838,7 @@ async function boot(D,img){
     for(let i=1;i<n;i++) if(anc[i]<=anc[i-1]+1) anc[i]=anc[i-1]+1;
     if(anc[n-1]>max){ anc[n-1]=max; for(let i=n-2;i>=0;i--) anc[i]=Math.min(anc[i],anc[i+1]-1); }
     if(live.length!==steps.length||live.some((k,i)=>k!==steps[i])){ steps=live; key=clamp(key,0,steps.length-1); if(forcedKey!==null) forcedKey=clamp(forcedKey,0,steps.length-1); }
-    anchors=anc;
+    anchors=anc; liveEls=els;
     /* 0.2.4 (narrow): where a scene's block of words leaves the screen for the stars, the
        flight spans the words' leaving plus half a screen of dissipation — never past the
        stars' anchor — so their scroll dissolves the painting completely and slowly, and the
@@ -1023,6 +1026,12 @@ async function boot(D,img){
     const target=targetKey();
     if(flyingIn) key=introK;                          // the key waits on the scene until every mark has landed
     else { key+=(target-key)*Math.min(1,dt/140); if(Math.abs(key-target)<0.0005) key=target; }
+    /* 0.2.5: the step the key rests on is marked on its element (class glyph-here) — the page
+       times its own motion to the reader's arrival (the lines that wipe while they linger);
+       not during the fly-in, and gone the moment the key leaves the step */
+    { const h=Math.round(key), at=(!flyingIn&&Math.abs(key-h)<0.02)?h:-1;
+      if(at!==hereK){ if(hereK>=0&&liveEls[hereK]) liveEls[hereK].classList.remove('glyph-here');
+        if(at>=0&&liveEls[at]) liveEls[at].classList.add('glyph-here'); hereK=at; } }
     const kA=clamp(Math.floor(key),0,steps.length-1), kB=Math.min(kA+1,steps.length-1);
     let sA=steps[kA], sB=steps[kB], f=key-kA;
     // the camera stays where the key is; only the homes the shader reads change for the fly-in
