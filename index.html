@@ -77,18 +77,23 @@
   .block b{font-weight:400;color:var(--gold)}
   .block em{color:var(--gold);font-style:italic}
   .block .hint{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:1rem}
-  /* the artwork's credit sits with the artwork: the painter, the year, whose collection */
-  .block .credit{font-family:var(--mono);font-size:.7rem;line-height:1.6;color:var(--muted);margin-top:1rem}
-  .block .credit b{font-weight:400;color:var(--ink)}
   .block .hint::after{content:'↓';display:inline-block;margin-left:.6em;animation:drift 2.4s ease-in-out infinite}
   @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(.45em)}}
   @media (prefers-reduced-motion:reduce){.block .hint::after{animation:none}}
   /* the runtime's decision (device or ?motion=) wins over the media query, both ways */
   html[data-glyph-motion="reduced"] .block .hint::after{animation:none}
   html[data-glyph-motion="full"] .block .hint::after{animation:drift 2.4s ease-in-out infinite}
+  /* the artwork's credit sits with the artwork: the painter, the year, whose collection */
+  .block .credit{font-family:var(--mono);font-size:.7rem;line-height:1.6;color:var(--muted);margin-top:1rem}
+  .block .credit b{font-weight:400;color:var(--ink)}
+  /* the hold: a wordless step of the same scene — the painting alone once the words have
+     gone above it; the flight to the stars begins only past it. A screen on the narrow
+     layout, nothing on the wide one (there the words sit beside the painting) */
+  .scene.hold{min-height:0;height:0;padding:0}
   @media (max-width:760px){
     .scene{justify-content:flex-end;padding-bottom:8vh}
     .block{max-width:none}
+    .scene.hold{min-height:100vh;min-height:100svh}
   }
 
   /* the universe: a long, quiet runway so the flight out has room, then a few words */
@@ -123,16 +128,29 @@
       <p class="eyebrow">Jesus in Prayer · <b>from the stars</b></p>
       <h1>The whole painting, thinned to what matters.</h1>
       <p><span data-live><b><span data-kept="scene">—</span></b> marks stand in for
-        <span data-grid="scene">—</span> cells: his face whole, the city he is looking at
-        and the temple far off in it, the moon, the purple of the robe. The color is the
-        painting's own; the sparseness is the point. Move your pointer, or your thumb, and
-        light spills out from under it.</span><span data-still>The painting itself stands
-        behind these words: this browser could not raise the field of marks. The words are
-        the same.</span></p>
-      <p class="credit"><b>Jesus in Prayer</b> — Alton S. Tobey (1963)<br>Original painting from the collection of Adam Leipold.</p>
+        <span data-grid="scene">—</span> cells:</span><span data-still>The painting itself
+        stands behind these words: this browser could not raise the field of marks.</span></p>
       <p class="hint">scroll</p>
     </div>
   </section>
+
+  <!-- the rest of the words: the same scene, so the painting holds while they scroll up
+       under it (on a phone this block seats its top on the same line as the first) -->
+  <section class="scene more" data-scene="scene">
+    <div class="block">
+      <p><span data-live>his face whole, the city he is looking at and the temple far off in
+        it, the moon, the purple of the robe. The color is the painting's own; the sparseness
+        is the point. Move your pointer, or your thumb, and light spills out from under
+        it.</span><span data-still>His face, the city he is looking at and the temple far off
+        in it, the moon, the purple of the robe — the painting itself, since this browser
+        could not raise the field of marks.</span></p>
+      <p class="credit"><b>Jesus in Prayer</b> — Alton S. Tobey (1963)<br>Original painting from the collection of Adam Leipold.</p>
+    </div>
+  </section>
+
+  <!-- the hold: the painting alone once every word has scrolled above it; the flight to
+       the stars begins only past this step (a step of the same scene never flies) -->
+  <section class="scene hold" data-scene="scene" aria-hidden="true"></section>
 
   <section class="end" data-scene="stars">
     <div class="block">
