@@ -1,6 +1,6 @@
 {
   "spec": "glyph-sequence/0.2",
-  "engine": "glyph3d-sequence-0.2.2",
+  "engine": "glyph3d-sequence-0.2.3",
   "created": "2026-09-04",
   "artwork": {
     "src": "/images/jesus-in-prayer-web-1200.jpg",
@@ -34,6 +34,10 @@
     "wake": 0.5,
     "fill": 0.9,
     "turn": false,
+    "lift": {
+      "rate": 0.35,
+      "max": 0.18
+    },
     "exchange": {
       "marks": 0.06,
       "stars": 0.05,
