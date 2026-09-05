@@ -20,7 +20,11 @@
    0.2.4: on a phone the words' scroll dissolves the painting, slowly, all
    the way to the cloud — the flight spans the words' leaving, then waits;
    0.2.5: the step the reader rests on is marked on its element, class
-   glyph-here, so the page can time its own motion to their arrival).
+   glyph-here, so the page can time its own motion to their arrival;
+   0.2.6: a painting may continue past its left edge into the field —
+   density.extend — its marks scattered and thinning, on the wide layout;
+   and glyph-here marks the step the reader rests AT — a scroll zone with
+   hysteresis — not a key value, so a phone's momentum scroll keeps it).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -59,7 +63,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.5';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.6';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -154,6 +158,7 @@ uniform float uF, uSpread, uSpin, uArc, uPitchA, uPitchB, uStarSize, uIntro, uSt
 uniform vec4 uHole;               /* the keep-out (a face): world xy of its center at the scene plane and its radii; zero radii = none */
 uniform vec4 uExchange;           /* the exchange at rest: marks duty, stars duty, period (s), reach — zero duties = none */
 uniform vec3 uShiftA, uShiftB;    /* where the assembled scene sits (the page's column layout) */
+uniform float uExtend;            /* 0.2.6: 1 shows the marks past the painting's edge (extra.w), 0 hides them (a phone) */
 uniform mat4 uMVP; uniform mat3 uRot; uniform float uGlyphCount;
 uniform float uTime,uSparkle,uBreath,uShimmer,uWakeS,uWakeR,uAspect,uMotionScale;
 uniform vec2 uPointer,uPointerLag;
@@ -245,6 +250,7 @@ void main(){
   base+=arcDir*fly*(0.18+0.3*aRand.z)*uArc;
   float size=mix(szA,szB,e)*(1.0-0.35*fly);
   if(fly>0.0001) size*=mix(1.0,keepOut(base.xy,base.z),fly);   /* a flight passing the face passes behind it; its ends are exact */
+  size*=mix(1.0,uExtend,max(xA.w,xB.w));                        /* 0.2.6: the marks past the painting's edge show on the wide layout only */
   vec3 col=mix(colA,colB,e);
   float glyph=e<0.5?gA:gB;
   float edge=mix(edA,edB,e);
@@ -466,6 +472,21 @@ function sampleScene(img,sc,rampN,chars,fillDef){
   /* 0.2: luma — brightness itself earns density (a lit face, a roof, the moon), so the painting
      thins by what is lit and never by an outline */
   const lw=num(den.luma,0,0,1,who+'density.luma');
+  /* 0.2.6: extend — the painting continues past its LEFT edge into the field (Adam: "extend the
+     painting left a bit… scatter dots to blend"): for `left` of the crop's width beyond the edge,
+     a cell takes its color and importance from the edge's own leftmost columns (its row drifting
+     a little by a smooth noise, so the sky, the haze and the rocks continue without streaking),
+     the importance full over the first 15 % of the reach and fading to nothing by its end, and
+     each mark scattered off the grid by up to `scatter` of the reach at the far end — the
+     painting bleeds into the cloud instead of ending on a line. The cells the LEFT vignette
+     drops come back as extension marks too, so the painting reaches its edge at full density
+     before the extension takes over. Wide layout only: on a phone the painting already fills
+     the width and keeps its fade — every extension mark is hidden there (extra.w → uExtend);
+     they count in `count`, never in the page's kept number. Malformed → reported, none. */
+  const ex=(den.extend&&typeof den.extend==='object')?den.extend:{};
+  if(den.extend!==undefined&&den.extend!==null&&typeof den.extend!=='object') note(who+'density.extend is not an object — no extension');
+  const exL=num(ex.left,0,0,1,who+'density.extend.left'), exS=num(ex.scatter,0.5,0,2,who+'density.extend.scatter');
+  const E=Math.round(exL*gw), impRaw=E>0?new Float32Array(n):null;
   /* 0.2: contrast — a cell of the region counts as content only where its COLOR differs from
      every DOMINANT color of the region's SURROUND (the ring just past the feather, reduced
      to its four main colors — a ring of sky and ground is those two, never their mean, so
@@ -511,12 +532,18 @@ function sampleScene(img,sc,rampN,chars,fillDef){
       // city's roofs, never a sleeve or a rock the wide feather also reaches
       if(r.glint>0){ const inC=(nd<=1?1:1-smooth(clamp((nd-1)/(0.25*r.f),0,1)))*keyF; if(inC>0) gl=Math.max(gl,r.glint*inC); } }
     imp=Math.min(1,imp+eg*edge[i]+lw*lum[i]);
-    if(vig>0){ const m=Math.min((x+0.5)/gw,(gw-x-0.5)/gw,(y+0.5)/gh,(gh-y-0.5)/gh)/vig; imp*=smooth(clamp(m,0,1)); }
+    if(impRaw) impRaw[i]=imp;
+    let impW=imp;                                                 // 0.2.6: the importance with no left fade (the wide layout, when extending)
+    if(vig>0){ const mR=Math.min((gw-x-0.5)/gw,(y+0.5)/gh,(gh-y-0.5)/gh)/vig, mL=(x+0.5)/gw/vig;
+      impW=imp*smooth(clamp(mR,0,1)); imp*=smooth(clamp(Math.min(mR,mL),0,1)); }   // imp: the fade as it always was
     // the threshold is uniform on [0,1) — gradient noise plus a small jitter, wrapped — so a
     // cell of importance p is kept with probability p: weight 0.3 keeps 30 %, evenly
     const thr=(ign(x,y)+0.25*seedFloat(i,salt))%1;
     const cr=d[i*4]/255, cg=d[i*4+1]/255, cb=d[i*4+2]/255;
     if(imp<=thr){
+      // 0.2.6: a cell the left fade dropped that the extension wants back — an extension mark
+      // in its own place (shown on the wide layout only; the phone keeps its fade)
+      if(E>0&&impW>thr){ kept.push({x,y,dx:0,dy:0,r:cr,g:cg,b:cb,l:lum[i],e:edge[i],fs,gl:0,rs:1-impW,ext:1}); continue; }
       if(imp>VISIT_MIN){ nVisit++;
         if(visits.length<VISIT_CAP) visits.push({x,y,r:cr,g:cg,b:cb});
         else { const r=Math.floor(seedFloat(i,31)*nVisit); if(r<VISIT_CAP) visits[r]={x,y,r:cr,g:cg,b:cb}; } }
@@ -526,13 +553,37 @@ function sampleScene(img,sc,rampN,chars,fillDef){
     // restless: how lightly a mark is held — the dust wanders, the face (importance 1) never
     kept.push({x,y,r:cr,g:cg,b:cb,l:lum[i],e:edge[i],fs,gl,rs:1-imp});
   }
+  const nKept=E>0?kept.reduce((a,k)=>a+(k.ext?0:1),0):kept.length;   // the painting's own kept cells: the page's number
+  if(E>0){
+    // a smooth value noise on a coarse lattice: neighbors drift together, so the continued
+    // texture bends as one and never shreds into rows
+    const vn=(x,y,sa)=>{ const xi=Math.floor(x), yi=Math.floor(y), fx=x-xi, fy=y-yi, sx=fx*fx*(3-2*fx), sy=fy*fy*(3-2*fy);
+      const q=(a,b)=>seedFloat((a*73856093)^(b*19349663),sa);
+      return mix(mix(q(xi,yi),q(xi+1,yi),sx),mix(q(xi,yi+1),q(xi+1,yi+1),sx),sy); };
+    const SRC=Math.min(8,gw);                                   // the edge's own leftmost columns feed the extension
+    for(let u=1;u<=E;u++){
+      const t=u/E, fall=1-smooth(clamp((t-0.15)/0.85,0,1)), sc=exS*E*Math.pow(smooth(t),1.5);
+      if(fall<=0) continue;
+      for(let y=0;y<gh;y++){
+        const id=n+(u-1)*gh+y;                                 // ids past the grid's own, for the seeds
+        const drift=(vn(u/28,y/28,salt+5)-0.5)*0.1*gh*smooth(t);
+        const sy=clamp(Math.round(y+drift),0,gh-1), sx=Math.floor(seedFloat(id,salt+6)*SRC), j=sy*gw+sx;
+        const imp=impRaw[j]*fall, thr=(ign(-u,y)+0.25*seedFloat(id,salt))%1;
+        if(imp<=thr) continue;
+        kept.push({x:-u,y,dx:(seedFloat(id,salt+7)-0.5)*2*sc,dy:(seedFloat(id,salt+8)-0.5)*1.2*sc,
+                   r:d[j*4]/255,g:d[j*4+1]/255,b:d[j*4+2]/255,l:lum[j],e:edge[j],fs:fillDef,gl:0,rs:1-imp,ext:1});
+      }
+    }
+  }
   if(!kept.length) note(who+'keeps no cells — its density rules leave it empty; it shows as stars');
-  let order=1; while(order<Math.max(gw,gh)) order<<=1;
-  for(const k of kept) k.h=hilbert(order,k.x,k.y);
+  let order=1; while(order<Math.max(gw+E,gh)) order<<=1;
+  for(const k of kept) k.h=hilbert(order,k.x+E,k.y);           // the extension's columns sit left of 0: shifted onto the curve
   kept.sort((a,b)=>a.h-b.h);
   const pitch=height/gh;
   for(const k of kept){
-    k.px=(k.x-gw/2+0.5)*pitch; k.py=(gh/2-k.y-0.5)*pitch; k.pz=(k.l-0.5)*depth;
+    // a scattered mark never lands inside the painting: its column stays left of the edge
+    const xx=k.ext?(k.x<0?Math.min(k.x+k.dx,-0.5):k.x):k.x, yy=k.ext?k.y+k.dy:k.y;
+    k.px=(xx-gw/2+0.5)*pitch; k.py=(gh/2-yy-0.5)*pitch; k.pz=(k.l-0.5)*depth;
     // bright → dense glyphs (the family's polarity); tiles ignore the index
     k.gi=chars?Math.round(k.l*(rampN-1)):0; }
   for(const v of visits){ v.px=(v.x-gw/2+0.5)*pitch; v.py=(gh/2-v.y-0.5)*pitch; }
@@ -551,7 +602,7 @@ function sampleScene(img,sc,rampN,chars,fillDef){
     const L=sc.light;
     if(!Array.isArray(L)||L.length!==2||!L.every(v=>typeof v==='number'&&Number.isFinite(v))) note(who+'light needs [x, y] (image pixels) — the light rests nowhere');
     else rest={x:((L[0]-x0)/cw-0.5)*gw*pitch, y:(0.5-(L[1]-y0)/ch)*gh*pitch}; }
-  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:kept.length,cells:kept,visits,depth,hole,rest};
+  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:kept.length,kept:nKept,ext:kept.length-nKept,cells:kept,visits,depth,hole,rest};
 }
 
 const nextTask=()=>new Promise(r=>setTimeout(r,0));
@@ -636,7 +687,7 @@ async function boot(D,img){
   gl.useProgram(prog);
   const U={}; ['uHomes','uHomesW','uRowsPer','uSceneA','uSceneB','uF','uSpread','uSpin','uArc','uPitchA','uPitchB',
     'uStarSize','uIntro','uStarRate','uDist','uHole','uExchange','uShiftA','uShiftB','uMVP','uRot','uGlyphCount','uTime','uSparkle','uBreath',
-    'uShimmer','uWakeS','uWakeR','uAspect','uMotionScale','uPointer','uPointerLag','uAtlas','uMode','uGold','uDiscard']
+    'uShimmer','uWakeS','uWakeR','uAspect','uMotionScale','uPointer','uPointerLag','uAtlas','uMode','uGold','uDiscard','uExtend']
     .forEach(n=>U[n]=gl.getUniformLocation(prog,n));
   gl.uniform3f(U.uGold,MOONGOLD[0],MOONGOLD[1],MOONGOLD[2]);
 
@@ -718,7 +769,7 @@ async function boot(D,img){
       const j=sl[r], c=s.cells[r], x=j%W, y=(j/W)|0, base=k*3*rowsPer;
       let o=((base+y)*W+x)*4; homes[o]=c.px; homes[o+1]=c.py; homes[o+2]=c.pz; homes[o+3]=c.e;
       o=((base+rowsPer+y)*W+x)*4; homes[o]=c.r; homes[o+1]=c.g; homes[o+2]=c.b; homes[o+3]=c.gi;
-      o=((base+2*rowsPer+y)*W+x)*4; homes[o]=c.gl; homes[o+1]=c.fs; homes[o+2]=c.rs;
+      o=((base+2*rowsPer+y)*W+x)*4; homes[o]=c.gl; homes[o+1]=c.fs; homes[o+2]=c.rs; homes[o+3]=c.ext?1:0;
       if(firstHome[j]<0){ firstHome[j]=k; starCol[j*3]=c.r; starCol[j*3+1]=c.g; starCol[j*3+2]=c.b; }
     }
     /* the visiting places: every star-only instance gets, in this scene's rows, one unkept
@@ -774,7 +825,7 @@ async function boot(D,img){
      and per scene the cells kept of the cells sampled */
   const put=(sel,v)=>document.querySelectorAll(sel).forEach(el=>{ el.textContent=v; });
   put('[data-count]',M.toLocaleString()); put('[data-stars]',NSTAR.toLocaleString());
-  for(const s of scenes){ put('[data-kept="'+s.id+'"]',s.count.toLocaleString()); put('[data-grid="'+s.id+'"]',(s.gw*s.gh).toLocaleString()); }
+  for(const s of scenes){ put('[data-kept="'+s.id+'"]',(s.kept!==undefined?s.kept:s.count).toLocaleString()); put('[data-grid="'+s.id+'"]',(s.gw*s.gh).toLocaleString()); }
 
   /* geometry — one quad, front face */
   const vao=gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -813,24 +864,27 @@ async function boot(D,img){
      line the painting stands on (stepView fits the painting above it) and the line every
      later block of scene words seats its top on at its anchor — the words never climb the
      painting where the reader stops. −1 = wide layout or a 0.1 document: the fixed fit. */
-  let liveEls=[], hereK=-1;      // the live steps' elements; the step the key rests on (class glyph-here)
+  let liveEls=[], hereK=-1;      // the live steps' elements; the step the reader rests at (class glyph-here)
+  let zones=[];                  // 0.2.6: per live step, [from, to) in scroll pixels — the reader is "here" inside it
+  const inZone=(k,s)=>{ const z=zones[k]; return !!z&&s>=z[0]&&s<z[1]; };
   let wordsLine=-1, liftK=-1;   // liftK: the step of the last block of scene words — the lift starts at its anchor
   function measure(){
     const V=probe.offsetHeight||innerHeight, narrow=narrowMQ.matches;
-    const live=[], anc=[], leave=[], els=[];
+    const live=[], anc=[], leave=[], els=[], stay=[];
     wordsLine=-1; liftK=-1;
     stepEls.forEach((el,i)=>{
       if(!el.isConnected||el.getClientRects().length===0){
         if(!skippedSaid.has(i)){ skippedSaid.add(i); note('[data-scene="'+el.dataset.scene+'"] has no layout box (display:none?) — left out of the timeline'); }
         return; }
       const r=el.getBoundingClientRect(), b=narrow?el.querySelector('.block'):null, marks=scenes[stepScene[i]].kind!=='stars';
-      let a, lv=0;
+      let a, lv=0, st=0;
       if(b){ const rb=b.getBoundingClientRect(), top=rb.top+scrollY;
         if(marks&&!DOC01){ if(wordsLine<0) wordsLine=top; a=top-wordsLine; liftK=live.length;
-          lv=wordsLine+rb.height+0.5*V; }        // the scroll past its anchor until the block has left, plus half a screen
+          lv=wordsLine+rb.height+0.5*V;          // the scroll past its anchor until the block has left, plus half a screen
+          st=wordsLine+rb.height; }              // the scroll past its anchor until the block has left: the reader is "here" until then
         else a=top+rb.height/2-V*0.72; }
       else a=r.top+r.height/2+scrollY-V/2;
-      live.push(stepScene[i]); anc.push(a); leave.push(lv); els.push(el); });
+      live.push(stepScene[i]); anc.push(a); leave.push(lv); els.push(el); stay.push(st); });
     if(!live.length){ live.push(fallbackK); anc.push(0); }
     // every anchor inside the reachable scroll range, strictly increasing, the last one reachable
     const max=Math.max(0,document.documentElement.scrollHeight-innerHeight), n=anc.length;
@@ -839,6 +893,11 @@ async function boot(D,img){
     if(anc[n-1]>max){ anc[n-1]=max; for(let i=n-2;i>=0;i--) anc[i]=Math.min(anc[i],anc[i+1]-1); }
     if(live.length!==steps.length||live.some((k,i)=>k!==steps[i])){ steps=live; key=clamp(key,0,steps.length-1); if(forcedKey!==null) forcedKey=clamp(forcedKey,0,steps.length-1); }
     anchors=anc; liveEls=els;
+    /* 0.2.6: a step's zone — the reader is "here" from a third of the way in from the step
+       before until its words have left the screen (a phone's block: its own leaving; else half
+       the way to the next step; the last step: on to the end) */
+    zones=anc.map((a,k)=>[k===0?-Infinity:a-0.35*(a-anc[k-1]),
+      stay[k]>0?a+stay[k]:(k<n-1?a+0.5*(anc[k+1]-a):Infinity)]);
     /* 0.2.4 (narrow): where a scene's block of words leaves the screen for the stars, the
        flight spans the words' leaving plus half a screen of dissipation — never past the
        stars' anchor — so their scroll dissolves the painting completely and slowly, and the
@@ -866,6 +925,8 @@ async function boot(D,img){
   API.key=()=>key; API.target=targetKey;
   API.lift=()=>liftF;                                      // QA: the painting's lift this frame (fraction of the canvas height)
   API.anchors=()=>anchors.slice();
+  API.zones=()=>zones.map(z=>z.slice());                   // QA: each live step's "here" zone, scroll pixels [from, to)
+  API.here=()=>hereK;                                      // QA: the step the reader rests at (−1 = none)
   API.timeline=steps.map(k=>scenes[k].id);
 
   /* rotation — a drag turns the assembled scene about its own center; released, the last
@@ -1026,10 +1087,16 @@ async function boot(D,img){
     const target=targetKey();
     if(flyingIn) key=introK;                          // the key waits on the scene until every mark has landed
     else { key+=(target-key)*Math.min(1,dt/140); if(Math.abs(key-target)<0.0005) key=target; }
-    /* 0.2.5: the step the key rests on is marked on its element (class glyph-here) — the page
-       times its own motion to the reader's arrival (the lines that wipe while they linger);
-       not during the fly-in, and gone the moment the key leaves the step */
-    { const h=Math.round(key), at=(!flyingIn&&Math.abs(key-h)<0.02)?h:-1;
+    /* 0.2.5/0.2.6: the step the reader rests AT is marked on its element (class glyph-here) — the
+       page times its own motion to their arrival (the lines that wipe while they linger). The
+       mark goes on when the key comes to rest inside a step's zone and STAYS while the scroll
+       stays in that zone, whatever the key does — a nudge of the thumb must not restart the
+       verse. (0.2.5 keyed it on |key − step| < 0.02: a phone's momentum scroll lands past that
+       and the verse never showed.) Not during the fly-in. */
+    { let at=-1;
+      if(!flyingIn){ const s=scrollY;
+        if(hereK>=0&&inZone(hereK,s)) at=hereK;
+        else if(Math.abs(key-target)<0.01){ for(let k=0;k<zones.length;k++) if(inZone(k,s)){ at=k; break; } } }
       if(at!==hereK){ if(hereK>=0&&liveEls[hereK]) liveEls[hereK].classList.remove('glyph-here');
         if(at>=0&&liveEls[at]) liveEls[at].classList.add('glyph-here'); hereK=at; } }
     const kA=clamp(Math.floor(key),0,steps.length-1), kB=Math.min(kA+1,steps.length-1);
@@ -1116,6 +1183,7 @@ async function boot(D,img){
     gl.uniform1f(U.uIntro,RM?1:introV); gl.uniform1f(U.uStarRate,STAR_RATE*ms);
     gl.uniform1f(U.uDist,dist); gl.uniform4f(U.uHole,hole[0],hole[1],hole[2],hole[3]);
     gl.uniform4f(U.uExchange,EX_M*ms,EX_S*ms,EX_P,EX_R);
+    gl.uniform1f(U.uExtend,narrowMQ.matches?0:1);            // 0.2.6: the extension past the painting's edge, wide layout only
     gl.uniform1f(U.uSpread,SPREAD);
     gl.uniform1f(U.uSpin,RM?0:SPIN);
     gl.uniform1f(U.uArc,RM?0:ARC);
