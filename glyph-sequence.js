@@ -29,7 +29,9 @@
    payload the page loads instead of the photograph, so no image of the
    painting is ever served; ?bake samples from artwork.src and offers
    GlyphSequence.bake(); and scene.lightFixed keeps the light at its rest —
-   the pointer never moves it).
+   the pointer never moves it; 0.2.8: artwork.guard — the field is not an
+   image to save: no pointer events on the canvas, no context menu or drag
+   over the hero).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -68,7 +70,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.7';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.8';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -587,8 +589,11 @@ function sampleScene(img,sc,rampN,chars,fillDef){
         const sy=clamp(Math.round(y+drift),0,gh-1), sx=Math.floor(seedFloat(id,salt+6)*SRC), j=sy*gw+sx;
         const imp=impRaw[j]*fall, thr=(ign(-u,y)+0.25*seedFloat(id,salt))%1;
         if(imp<=thr) continue;
+        /* 0.2.8: an extension mark is as calm as the painting's edge where it starts and only the far
+           fringe wanders — a restlessness of 1 − its faded importance made nearly all of them dust
+           in flight (Adam: "swarms of dots that dance like bugs behind the circling particles") */
         kept.push({x:-u,y,dx:(seedFloat(id,salt+7)-0.5)*2*sc,dy:(seedFloat(id,salt+8)-0.5)*1.2*sc,
-                   r:d[j*4]/255,g:d[j*4+1]/255,b:d[j*4+2]/255,l:lum[j],e:edge[j],fs:fillDef,gl:0,rs:1-imp,ext:1});
+                   r:d[j*4]/255,g:d[j*4+1]/255,b:d[j*4+2]/255,l:lum[j],e:edge[j],fs:fillDef,gl:0,rs:0.5*(1-impRaw[j])*(1-fall),ext:1});
       }
     }
   }
@@ -703,7 +708,7 @@ function fallback2D(D,B,rampN,chars,fillDef){
     const sc=(D.scenes||[]).find(x=>x&&typeof x==='object'&&x.kind!=='stars'); if(!sc) return;
     const s=bakedScene(B,sc,rampN,chars,fillDef); if(!s||s.kind!=='marks'||!s.cells.length) return;
     const host=document.getElementById('glyph-hero')||document.body, c=document.createElement('canvas');
-    c.id='glyph-fallback'; c.setAttribute('aria-hidden','true'); host.appendChild(c);
+    c.id='glyph-fallback'; c.setAttribute('aria-hidden','true'); c.style.pointerEvents='none'; host.appendChild(c);
     // painted at the hero's size, again on resize (a hidden tab can measure 0 at load)
     const paint=()=>{ const W=host.clientWidth||innerWidth, H=host.clientHeight||innerHeight; if(!(W>0&&H>0)) return;
       c.width=W; c.height=H; const cx=c.getContext('2d'); if(!cx) return;
@@ -779,6 +784,18 @@ async function boot(D,source){
     canvas.setAttribute('aria-label',(D.artwork&&D.artwork.alt)||'Living glyph sequence');
     host.appendChild(canvas);
   }
+  /* 0.2.8: artwork.guard — the field is not an image to save (Adam: "I can now download a
+     better image than before!"): the canvas takes no pointer events, so the context menu over
+     it is the page's own, with no "save image"; the hero refuses the context menu and drags
+     (the words keep theirs). A turning field (motion.turn) is a control and keeps its pointer
+     events — only the menu and drags are refused. A screenshot is beyond any page's reach;
+     what this keeps out of reach is the photograph, which is not served. Malformed → reported. */
+  const GA=D.artwork||{}; let GUARD=false;
+  if(GA.guard!==undefined&&GA.guard!==null){ if(typeof GA.guard==='boolean') GUARD=GA.guard; else note('artwork.guard '+JSON.stringify(GA.guard)+' is not true or false — false used'); }
+  if(GUARD){ if(!TURN) canvas.style.pointerEvents='none';
+    host.addEventListener('contextmenu',e=>e.preventDefault());
+    host.addEventListener('dragstart',e=>e.preventDefault()); }
+  API.guard=GUARD;
   // a stable viewport height for the timeline: 100vh resolves to the LARGE viewport on
   // iOS and Android, so the toolbar collapsing mid-scroll never moves the anchors
   const probe=document.createElement('div');

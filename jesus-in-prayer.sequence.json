@@ -1,9 +1,10 @@
 {
   "spec": "glyph-sequence/0.2",
-  "engine": "glyph3d-sequence-0.2.7",
+  "engine": "glyph3d-sequence-0.2.8",
   "created": "2026-09-04",
   "artwork": {
     "baked": "/jesus-in-prayer.marks.json",
+    "guard": true,
     "name": "Jesus in Prayer",
     "alt": "Oil painting of Jesus seated in prayer on the Mount of Olives at night, looking out over Jerusalem and the temple far off under a moon through clouds, rendered as a field of small glowing marks."
   },
