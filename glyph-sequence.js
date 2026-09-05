@@ -15,7 +15,8 @@
    from the painting's sky and orbiting behind him, the city's lights alive,
    the camera still; 0.2.2: on a phone the painting fits the band above its
    words and holds while they scroll past, and the reader's light rests on
-   an authored point — the moon — whenever no pointer is on the page).
+   an authored point — the moon — whenever no pointer is on the page;
+   0.2.3: the painting lifts slowly as the rest of its words scroll past).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -54,7 +55,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.2';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.3';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -568,6 +569,12 @@ async function boot(D,img){
   // 0.2: turn — false keeps the camera straight-on and still: no drag, no arrow keys, no drift
   const TURN=(MO.turn===undefined||MO.turn===null)?true:(typeof MO.turn==='boolean'?MO.turn:(note('motion.turn '+JSON.stringify(MO.turn)+' is not true or false — true used'),true));
   API.turn=TURN;
+  /* 0.2.3: lift — on the narrow layout the painting rises slowly as the last block of its
+     words scrolls up past it: rate = its rise per pixel of scroll at first (0 = none), max =
+     the most it rises, a fraction of the viewport height, eased toward (never a kink) */
+  const LI=(MO.lift&&typeof MO.lift==='object')?MO.lift:{};
+  if(MO.lift!==undefined&&MO.lift!==null&&typeof MO.lift!=='object') note('motion.lift is not an object — no lift');
+  const LIFT_RATE=num(LI.rate,0,0,1,'motion.lift.rate'), LIFT_MAX=num(LI.max,0.18,0,0.6,'motion.lift.max');
   const ST=(D.stars&&typeof D.stars==='object')?D.stars:{};
   if(D.stars!==undefined&&D.stars!==null&&typeof D.stars!=='object') note('stars is not an object — defaults used');
   // 0 is a legal count: no star-only instances, the marks alone become the ambient field
@@ -802,11 +809,11 @@ async function boot(D,img){
      line the painting stands on (stepView fits the painting above it) and the line every
      later block of scene words seats its top on at its anchor — the words never climb the
      painting where the reader stops. −1 = wide layout or a 0.1 document: the fixed fit. */
-  let wordsLine=-1;
+  let wordsLine=-1, liftK=-1;   // liftK: the step of the last block of scene words — the lift starts at its anchor
   function measure(){
     const V=probe.offsetHeight||innerHeight, narrow=narrowMQ.matches;
     const live=[], anc=[];
-    wordsLine=-1;
+    wordsLine=-1; liftK=-1;
     stepEls.forEach((el,i)=>{
       if(!el.isConnected||el.getClientRects().length===0){
         if(!skippedSaid.has(i)){ skippedSaid.add(i); note('[data-scene="'+el.dataset.scene+'"] has no layout box (display:none?) — left out of the timeline'); }
@@ -814,7 +821,7 @@ async function boot(D,img){
       const r=el.getBoundingClientRect(), b=narrow?el.querySelector('.block'):null, marks=scenes[stepScene[i]].kind!=='stars';
       let a;
       if(b){ const rb=b.getBoundingClientRect(), top=rb.top+scrollY;
-        if(marks&&!DOC01){ if(wordsLine<0) wordsLine=top; a=top-wordsLine; }
+        if(marks&&!DOC01){ if(wordsLine<0) wordsLine=top; a=top-wordsLine; liftK=live.length; }
         else a=top+rb.height/2-V*0.72; }
       else a=r.top+r.height/2+scrollY-V/2;
       live.push(stepScene[i]); anc.push(a); });
@@ -843,6 +850,7 @@ async function boot(D,img){
     if(typeof v!=='number'||!Number.isFinite(v)){ note('setKey('+JSON.stringify(v)+') ignored — the key is a number in [0, '+(steps.length-1)+']'); return; }
     forcedKey=clamp(v,0,steps.length-1); if(snap) key=forcedKey; };
   API.key=()=>key; API.target=targetKey;
+  API.lift=()=>liftF;                                      // QA: the painting's lift this frame (fraction of the canvas height)
   API.anchors=()=>anchors.slice();
   API.timeline=steps.map(k=>scenes[k].id);
 
@@ -933,6 +941,7 @@ async function boot(D,img){
      margin on its far edge; the star field fits by height only */
   const tf=Math.tan(22.5*Math.PI/180);
   let bandB=0;   // 0.2 (narrow): the painting's floor as a fraction of the canvas height, from the top (0 = the fixed fit)
+  let liftF=0;   // 0.2.3 (narrow): how far the painting has risen, a fraction of the canvas height
   function stepView(k,ar,narrow){
     const s=scenes[k], stars=s.kind==='stars';
     const wH=s.height, wW=stars?0:s.width;
@@ -943,7 +952,7 @@ async function boot(D,img){
       const top=0.035, availH=bandB-top, cy=(top+bandB)/2;
       const dist=clamp(Math.max(wH/(2*tf*availH),1.08*wW/(2*tf*ar)),0.7,12);
       const worldH=2*tf*dist;
-      return {dist,shift:[0,(1-2*cy)*worldH/2,0],pitch:s.pitch}; }
+      return {dist,shift:[0,(1-2*cy)*worldH/2+liftF*worldH,0],pitch:s.pitch}; }
     const ax=stars?0:(narrow?0:0.3), ay=stars?0:(narrow?0.17:0);
     const dist=clamp(1.12*Math.max(wH/(2*tf*(1-ay)),wW/(2*tf*ar*(1-ax))),0.7,12);
     const worldH=2*tf*dist, worldW=worldH*ar;
@@ -965,7 +974,7 @@ async function boot(D,img){
 
   const R=new Float32Array(9);
   let t0=0,lastT=0, measuredAt=0, rmWas=prm.matches, drewOnce=false;
-  const pd={s:-1,x:0,y:0,lx:0,ly:0};                       // the light as last drawn (the rest gate)
+  const pd={s:-1,x:0,y:0,lx:0,ly:0,lift:-1};                       // the light as last drawn (the rest gate)
   function draw(t){
     if(dead) return;
     requestAnimationFrame(draw);
@@ -1006,7 +1015,12 @@ async function boot(D,img){
     const kA=clamp(Math.floor(key),0,steps.length-1), kB=Math.min(kA+1,steps.length-1);
     let sA=steps[kA], sB=steps[kB], f=key-kA;
     // the camera stays where the key is; only the homes the shader reads change for the fly-in
-    { const H=canvas.clientHeight||innerHeight; bandB=(wordsLine>0&&narrowMQ.matches)?clamp((wordsLine-0.02*H)/H,0.35,0.95):0; }
+    { const H=canvas.clientHeight||innerHeight; bandB=(wordsLine>0&&narrowMQ.matches)?clamp((wordsLine-0.02*H)/H,0.35,0.95):0;
+      // the lift: from the anchor of the last block of scene words on, the painting rises with
+      // the scroll — LIFT_RATE of it at first, easing toward LIFT_MAX of the viewport — and
+      // comes back down the same way. Scroll-driven like the flights: it stands under reduced motion
+      const d=(bandB>0&&LIFT_RATE>0&&LIFT_MAX>0&&liftK>=0&&liftK<anchors.length&&forcedKey===null)?Math.max(0,scrollY-anchors[liftK]):0;
+      liftF=d>0?LIFT_MAX*(1-Math.exp(-LIFT_RATE*d/(LIFT_MAX*H))):0; }
     const vA=stepView(sA,canvas.width/canvas.height,narrowMQ.matches), vB=flyingIn?vA:stepView(sB,canvas.width/canvas.height,narrowMQ.matches);
     if(flyingIn){ sB=sA; sA=starsK; f=introF; }             // the same view at both ends: only the homes the shader reads change
     syncReplay();
@@ -1059,9 +1073,9 @@ async function boot(D,img){
        strength, not merely because it is lit: a resting light is a still image */
     const ptrMoved=ptr.s!==pd.s||ptr.x!==pd.x||ptr.y!==pd.y||ptr.lag[0]!==pd.lx||ptr.lag[1]!==pd.ly;
     const moving=!drewOnce||resized||rmChanged||introStart>=0||fadeStart>=0||key!==target||drag||
-                 rot.vy!==0||rot.vp!==0||ptrMoved||forcedKey!==null;
+                 rot.vy!==0||rot.vp!==0||ptrMoved||liftF!==pd.lift||forcedKey!==null;
     if(RM&&!moving) return;
-    drewOnce=true; pd.s=ptr.s; pd.x=ptr.x; pd.y=ptr.y; pd.lx=ptr.lag[0]; pd.ly=ptr.lag[1];
+    drewOnce=true; pd.s=ptr.s; pd.x=ptr.x; pd.y=ptr.y; pd.lx=ptr.lag[0]; pd.ly=ptr.lag[1]; pd.lift=liftF;
     /* the keep-out this frame: the scene's, placed by its view; while a scene is arriving
        it opens once most marks are down (the face lands around 0.7–0.85 of the flight), and
        while one is leaving it holds until most have gone — so a star never slips over a face

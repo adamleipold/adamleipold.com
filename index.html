@@ -77,8 +77,9 @@
   .block b{font-weight:400;color:var(--gold)}
   .block em{color:var(--gold);font-style:italic}
   .block .hint{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:1rem}
-  .block .hint::after{content:'↓';display:inline-block;margin-left:.6em;animation:drift 2.4s ease-in-out infinite}
-  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(.45em)}}
+  /* the arrow points the way the page moves under a thumb (Adam: the other way was wrong) */
+  .block .hint::after{content:'↑';display:inline-block;margin-left:.6em;animation:drift 2.4s ease-in-out infinite}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-.45em)}}
   @media (prefers-reduced-motion:reduce){.block .hint::after{animation:none}}
   /* the runtime's decision (device or ?motion=) wins over the media query, both ways */
   html[data-glyph-motion="reduced"] .block .hint::after{animation:none}
