@@ -24,7 +24,8 @@ publishing.
 
 ```
 index.html                     holding page, no design
-images/                        painting web sizes (2400/1200), OG card
+images/                        the OG card only — no photograph of the painting is served;
+                               the page loads its marks baked (jesus-in-prayer.marks.json)
 css/gethsemane-palette.css     colour tokens — pigment + screen tiers
 css/gethsemane-palette.json    the same, machine-readable
 fonts/                         self-hosted woff2 (CSP forbids external hosts)

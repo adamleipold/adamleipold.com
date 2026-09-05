@@ -24,7 +24,12 @@
    0.2.6: a painting may continue past its left edge into the field —
    density.extend — its marks scattered and thinning, on the wide layout;
    and glyph-here marks the step the reader rests AT — a scroll zone with
-   hysteresis — not a key value, so a phone's momentum scroll keeps it).
+   hysteresis — not a key value, so a phone's momentum scroll keeps it;
+   0.2.7: the marks may come BAKED — artwork.baked names a glyph-marks/1
+   payload the page loads instead of the photograph, so no image of the
+   painting is ever served; ?bake samples from artwork.src and offers
+   GlyphSequence.bake(); and scene.lightFixed keeps the light at its rest —
+   the pointer never moves it).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -63,7 +68,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.6';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.7';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -350,14 +355,26 @@ function start(D){
   for(let k=0;k<D.scenes.length;k++){ const id=sceneId(D.scenes[k]);
     if(typeof id!=='string'||!id){ fail('scene '+k+' has no id'); return; }
     if(ids.has(id)){ fail('duplicate scene id "'+id+'"'); return; } ids.add(id); }
-  if(!D.artwork||typeof D.artwork.src!=='string'||!D.artwork.src){ fail('the sequence names no artwork.src (a URL or a data: URI)'); return; }
+  /* 0.2.7: baked marks — artwork.baked names a glyph-marks/1 payload (what GlyphSequence.bake()
+     wrote under ?bake): the page loads the marks and never the photograph. ?bake and ?sample
+     take the sampling path from artwork.src instead (authoring; QA). A payload that fails to
+     load or read is reported and the page keeps its background — never a silent fall back to
+     the photograph, which the site does not carry. */
+  const bakedUrl=(D.artwork&&typeof D.artwork.baked==='string'&&D.artwork.baked)?D.artwork.baked:null;
+  if(bakedUrl&&!Q.has('bake')&&!Q.has('sample')){
+    fetch(bakedUrl).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status+' for '+bakedUrl); return r.json(); })
+      .then(B=>{ if(!B||typeof B!=='object'||B.format!=='glyph-marks/1') throw new Error(bakedUrl+' is not a glyph-marks/1 payload');
+        return boot(D,{baked:B}); })
+      .catch(e=>{ fail('the baked marks did not load: '+(e&&e.message||e)); console.error(e); });
+    return; }
+  if(!D.artwork||typeof D.artwork.src!=='string'||!D.artwork.src){ fail('the sequence names no artwork.src (a URL or a data: URI)'+(bakedUrl?' — needed for ?bake / ?sample':'')); return; }
   const src=D.artwork.src;
   const img=new Image();
   // CORS mode so a cross-origin artwork that allows it can be sampled (getImageData on a
   // tainted canvas throws); same-origin and data: sources are unaffected
   img.crossOrigin='anonymous';
   img.decoding='async';
-  const go=()=>boot(D,img).catch(e=>{ fail('boot: '+(e&&e.message||e)); console.error(e); });
+  const go=()=>boot(D,{img}).catch(e=>{ fail('boot: '+(e&&e.message||e)); console.error(e); });
   // decode off the main thread before the first drawImage — but only as an optimization:
   // decode() never settles while the document is hidden (a background tab, the embedded
   // pane), so boot proceeds after a short wait regardless and drawImage decodes inline
@@ -580,6 +597,13 @@ function sampleScene(img,sc,rampN,chars,fillDef){
   for(const k of kept) k.h=hilbert(order,k.x+E,k.y);           // the extension's columns sit left of 0: shifted onto the curve
   kept.sort((a,b)=>a.h-b.h);
   const pitch=height/gh;
+  placeCells(kept,visits,gw,gh,pitch,depth,chars,rampN);
+  const G=sceneGeometry(sc,who,x0,y0,cw,ch,gw,gh,pitch);
+  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:kept.length,kept:nKept,ext:kept.length-nKept,cells:kept,visits,depth,
+          crop:[x0,y0,x1,y1],hole:G.hole,rest:G.rest,fixed:G.fixed,baked:false};
+}
+/* the cells' places in the scene's world (shared by sampling and the baked path) */
+function placeCells(kept,visits,gw,gh,pitch,depth,chars,rampN){
   for(const k of kept){
     // a scattered mark never lands inside the painting: its column stays left of the edge
     const xx=k.ext?(k.x<0?Math.min(k.x+k.dx,-0.5):k.x):k.x, yy=k.ext?k.y+k.dy:k.y;
@@ -587,6 +611,9 @@ function sampleScene(img,sc,rampN,chars,fillDef){
     // bright → dense glyphs (the family's polarity); tiles ignore the index
     k.gi=chars?Math.round(k.l*(rampN-1)):0; }
   for(const v of visits){ v.px=(v.x-gw/2+0.5)*pitch; v.py=(gh/2-v.y-0.5)*pitch; }
+}
+/* the scene's authored geometry, image pixels → world units (shared by sampling and the baked path) */
+function sceneGeometry(sc,who,x0,y0,cw,ch,gw,gh,pitch){
   /* 0.2: keepOut {cx, cy, rx, ry} (image pixels) — the part of this scene the stars never
      cross as seen from the camera (a face); in world units of the scene. Malformed → reported, none. */
   let hole=null;
@@ -602,12 +629,97 @@ function sampleScene(img,sc,rampN,chars,fillDef){
     const L=sc.light;
     if(!Array.isArray(L)||L.length!==2||!L.every(v=>typeof v==='number'&&Number.isFinite(v))) note(who+'light needs [x, y] (image pixels) — the light rests nowhere');
     else rest={x:((L[0]-x0)/cw-0.5)*gw*pitch, y:(0.5-(L[1]-y0)/ch)*gh*pitch}; }
-  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:kept.length,kept:nKept,ext:kept.length-nKept,cells:kept,visits,depth,hole,rest};
+  /* 0.2.7: lightFixed — the light stays at its rest; the pointer never moves it (Adam:
+     "initialize the cursor effect at moon center and don't have it move with the cursor").
+     Needs a light; malformed → reported, false. */
+  let fixed=false;
+  if(sc.lightFixed!==undefined&&sc.lightFixed!==null){
+    if(typeof sc.lightFixed==='boolean') fixed=sc.lightFixed;
+    else note(who+'lightFixed '+JSON.stringify(sc.lightFixed)+' is not true or false — false used'); }
+  if(fixed&&!rest){ note(who+'lightFixed needs light [x, y] — the light follows the pointer'); fixed=false; }
+  return {hole,rest,fixed};
+}
+/* 0.2.7: a scene from the baked marks (glyph-marks/1: base64 typed arrays, little-endian —
+   what GlyphSequence.bake() wrote from this same sampler). The document's density rules are
+   the bake's; height, depth, keepOut, light and lightFixed are read live. */
+function bakedScene(B,sc,rampN,chars,fillDef){
+  const who='scene "'+sc.id+'" ';
+  const P=(Array.isArray(B.scenes)?B.scenes:[]).find(p=>p&&p.id===sc.id);
+  if(!P){ note(who+'is not in the baked marks — shown as stars'); return starsScene(sc,0); }
+  const dec=t=>{ const bin=atob(typeof t==='string'?t:''), n=bin.length, u=new Uint8Array(n); for(let i=0;i<n;i++) u[i]=bin.charCodeAt(i); return u; };
+  const i16=t=>{ const u=dec(t); return new Int16Array(u.buffer,0,u.length>>1); };
+  const n=P.count|0, gw=P.gw|0, gh=P.gh|0;
+  if(!(n>0&&gw>0&&gh>0)){ note(who+'baked marks are empty — shown as stars'); return starsScene(sc,0); }
+  const across=Math.round(num(sc.across,160,8,1024,who+'across'));
+  if(across!==gw) note(who+'across '+across+' differs from the baked marks\' '+gw+' — the baked grid is used (re-bake to change it)');
+  const X=i16(P.x),Y=i16(P.y),DX=i16(P.dx),DY=i16(P.dy),RGB=dec(P.rgb),E=dec(P.e),FS=dec(P.fs),GL=dec(P.gl),RS=dec(P.rs),EX=dec(P.ext);
+  if(X.length<n||Y.length<n||RGB.length<n*3||E.length<n||FS.length<n||GL.length<n||RS.length<n||EX.length<n){
+    note(who+'baked marks are truncated — shown as stars'); return starsScene(sc,0); }
+  const kept=new Array(n);
+  for(let i=0;i<n;i++){ const r=RGB[i*3]/255, g=RGB[i*3+1]/255, b=RGB[i*3+2]/255;
+    kept[i]={x:X[i],y:Y[i],dx:(i<DX.length?DX[i]:0)/100,dy:(i<DY.length?DY[i]:0)/100,r,g,b,l:0.2126*r+0.7152*g+0.0722*b,
+             e:E[i]/255,fs:0.3+FS[i]/255*0.9,gl:GL[i]/255,rs:RS[i]/255,ext:EX[i]?1:0}; }
+  const V=(P.visits&&typeof P.visits==='object')?P.visits:{}, vn=V.count|0;
+  const VX=vn>0?i16(V.x):[], VY=vn>0?i16(V.y):[], VR=vn>0?dec(V.rgb):[], visits=[];
+  for(let i=0;i<vn&&i<VX.length&&i<VY.length&&i*3+2<VR.length;i++) visits.push({x:VX[i],y:VY[i],r:VR[i*3]/255,g:VR[i*3+1]/255,b:VR[i*3+2]/255});
+  const depth=num(sc.depth,0,-2,2,who+'depth'), height=num(sc.height,1,0.05,20,who+'height'), pitch=height/gh;
+  placeCells(kept,visits,gw,gh,pitch,depth,chars,rampN);
+  const aw=(B.artwork&&B.artwork.w)|0, ah=(B.artwork&&B.artwork.h)|0;
+  const crop=(Array.isArray(P.crop)&&P.crop.length===4&&P.crop.every(v=>typeof v==='number'))?P.crop:[0,0,aw||gw,ah||gh];
+  const G=sceneGeometry(sc,who,crop[0],crop[1],crop[2]-crop[0],crop[3]-crop[1],gw,gh,pitch);
+  const nKept=(typeof P.kept==='number')?P.kept:kept.reduce((a,k)=>a+(k.ext?0:1),0);
+  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:n,kept:nKept,ext:n-nKept,cells:kept,visits,depth,
+          crop,hole:G.hole,rest:G.rest,fixed:G.fixed,baked:true};
+}
+/* the sky palette from the baked marks: the 96×96 crop's pixels as baked; the weights recomputed */
+function bakedPalette(B){
+  if(!B.palette||typeof B.palette.d!=='string'){ note('the baked marks carry no sky palette — stars take the marks\' colors'); return null; }
+  const bin=atob(B.palette.d), d=new Uint8ClampedArray(bin.length); for(let i=0;i<bin.length;i++) d[i]=bin.charCodeAt(i);
+  const n=d.length>>2, cum=new Float32Array(n); let acc=0;
+  for(let i=0;i<n;i++){ const l=(0.2126*d[i*4]+0.7152*d[i*4+1]+0.0722*d[i*4+2])/255; acc+=0.03+l*l; cum[i]=acc; }
+  return {d,cum,n,total:acc};
+}
+/* ?bake: the sampled scenes as a glyph-marks/1 payload — base64 typed arrays (little-endian),
+   the visiting places capped at 12,000 (the exchange ever uses stars.count of them) */
+function bakePayload(D,scenes,SKY,img){
+  const enc=u=>{ let t=''; for(let i=0;i<u.length;i+=8192) t+=String.fromCharCode.apply(null,u.subarray(i,i+8192)); return btoa(t); };
+  const i16=a=>enc(new Uint8Array(Int16Array.from(a).buffer)), u8=a=>enc(Uint8Array.from(a)), q=(v,lo,hi)=>Math.round(clamp((v-lo)/(hi-lo),0,1)*255);
+  const out={format:'glyph-marks/1',engine:ENGINE,created:new Date().toISOString().slice(0,10),
+             artwork:{w:img?img.naturalWidth:0,h:img?img.naturalHeight:0},palette:SKY?{d:enc(SKY.d)}:null,scenes:[]};
+  for(const s of scenes){ if(s.kind!=='marks'||!s.cells) continue;
+    const c=s.cells, n=c.length, vs=(s.visits||[]).slice(0,12000);
+    const rgb=new Uint8Array(n*3); for(let i=0;i<n;i++){ rgb[i*3]=q(c[i].r,0,1); rgb[i*3+1]=q(c[i].g,0,1); rgb[i*3+2]=q(c[i].b,0,1); }
+    const vr=new Uint8Array(vs.length*3); for(let i=0;i<vs.length;i++){ vr[i*3]=q(vs[i].r,0,1); vr[i*3+1]=q(vs[i].g,0,1); vr[i*3+2]=q(vs[i].b,0,1); }
+    out.scenes.push({id:s.id,gw:s.gw,gh:s.gh,crop:s.crop,count:n,kept:s.kept,ext:s.ext,
+      x:i16(c.map(k=>k.x)),y:i16(c.map(k=>k.y)),dx:i16(c.map(k=>Math.round((k.dx||0)*100))),dy:i16(c.map(k=>Math.round((k.dy||0)*100))),
+      rgb:enc(rgb),e:u8(c.map(k=>q(k.e,0,1))),fs:u8(c.map(k=>q(k.fs,0.3,1.2))),gl:u8(c.map(k=>q(k.gl,0,1))),rs:u8(c.map(k=>q(k.rs,0,1))),ext:u8(c.map(k=>k.ext?1:0)),
+      visits:{count:vs.length,x:i16(vs.map(v=>v.x)),y:i16(vs.map(v=>v.y)),rgb:enc(vr)}}); }
+  return JSON.stringify(out);
+}
+/* 0.2.7: no WebGL — the first scene's marks painted once on a plain canvas in the hero, dim,
+   the way the photograph stood behind the words before the page stopped carrying one */
+function fallback2D(D,B,rampN,chars,fillDef){
+  try{
+    const sc=(D.scenes||[]).find(x=>x&&typeof x==='object'&&x.kind!=='stars'); if(!sc) return;
+    const s=bakedScene(B,sc,rampN,chars,fillDef); if(!s||s.kind!=='marks'||!s.cells.length) return;
+    const host=document.getElementById('glyph-hero')||document.body, c=document.createElement('canvas');
+    c.id='glyph-fallback'; c.setAttribute('aria-hidden','true'); host.appendChild(c);
+    // painted at the hero's size, again on resize (a hidden tab can measure 0 at load)
+    const paint=()=>{ const W=host.clientWidth||innerWidth, H=host.clientHeight||innerHeight; if(!(W>0&&H>0)) return;
+      c.width=W; c.height=H; const cx=c.getContext('2d'); if(!cx) return;
+      const scale=Math.min(W*0.92/s.width,H*0.92/s.height), ox=W/2, oy=H/2, px=s.pitch*scale; let last='';
+      for(const k of s.cells){ if(k.ext) continue;
+        const col='rgb('+Math.round(k.r*255)+','+Math.round(k.g*255)+','+Math.round(k.b*255)+')'; if(col!==last){ cx.fillStyle=col; last=col; }
+        const sz=Math.max(1,px*k.fs); cx.fillRect(ox+k.px*scale-sz/2,oy-k.py*scale-sz/2,sz,sz); } };
+    paint(); addEventListener('resize',()=>requestAnimationFrame(paint),{passive:true});
+  }catch(e){ console.warn('glyph-sequence: the fallback could not paint: '+(e&&e.message||e)); }
 }
 
 const nextTask=()=>new Promise(r=>setTimeout(r,0));
 
-async function boot(D,img){
+async function boot(D,source){
+  const img=source.img||null, BK=source.baked||null, BAKE=Q.has('bake');
+  API.baked=!!BK;
   /* style: tiles (the default) or chars; anything else is reported and shown as tiles */
   const qStyle=Q.get('style'), style=qStyle||D.style||'tiles';
   if(style!=='tiles'&&style!=='chars') note((qStyle?'?style=':'style ')+JSON.stringify(style)+' is not "tiles" or "chars" — tiles shown');
@@ -673,7 +785,7 @@ async function boot(D,img){
   probe.style.cssText='position:fixed;top:0;left:0;width:0;height:100vh;visibility:hidden;pointer-events:none';
   host.appendChild(probe);
   const gl=canvas.getContext('webgl2',{antialias:true,alpha:false});
-  if(!gl){ canvas.remove(); fail('WebGL2 unavailable'); return; }
+  if(!gl||Q.has('fallback')){ canvas.remove(); fail(gl?'?fallback: the WebGL path skipped':'WebGL2 unavailable'); if(BK) fallback2D(D,BK,1,false,FILL); return; }   // RAMP is read later: the fallback needs no glyph index
 
   /* program */
   function compile(type,src){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
@@ -734,7 +846,7 @@ async function boot(D,img){
       if(sc.crop!==undefined||sc.density!==undefined||sc.across!==undefined) note('scene "'+sc.id+'" is stars — its crop / across / density are ignored');
       if(sc.keepOut!==undefined) note('scene "'+sc.id+'" is stars — a keepOut has nothing to keep the stars out of; ignored');
       scenes.push(starsScene(sc,k)); }
-    else scenes.push(sampleScene(img,sc,RAMP.length,chars,FILL));
+    else scenes.push(BK?bakedScene(BK,sc,RAMP.length,chars,FILL):sampleScene(img,sc,RAMP.length,chars,FILL));
     if(dead) return;
     await nextTask();
   }
@@ -790,7 +902,8 @@ async function boot(D,img){
      star is its first home mixed half-way to one; either is lifted to a luma of 0.3 so it
      reads against the night. Without one (0.1): a mark's first home dimmed, a star-only
      instance borrowing a mark's color from the fullest scene. */
-  const SKY=(ST.palette!==undefined&&ST.palette!==null)?skyPalette(img,ST.palette):null;
+  const SKY=(ST.palette!==undefined&&ST.palette!==null)?(BK?bakedPalette(BK):skyPalette(img,ST.palette)):null;
+  if(BAKE&&!BK) API.bake=()=>bakePayload(D,scenes,SKY,img);      // ?bake: the sampled scenes as a glyph-marks/1 payload
   const pal=scenes[byCount[0]].cells;
   for(let i=0;i<N;i++){
     rnd[i*3]=seedFloat(i,11); rnd[i*3+1]=seedFloat(i,12); rnd[i*3+2]=seedFloat(i,13);
@@ -807,7 +920,7 @@ async function boot(D,img){
       r=Math.min(1,r*dim+0.18); g=Math.min(1,g*dim+0.18); b=Math.min(1,b*dim+0.22); }
     starCol[i*3]=r; starCol[i*3+1]=g; starCol[i*3+2]=b;
   }
-  for(const s of scenes){ s.visitCount=s.visits?s.visits.length:0; s.cells=null; s.visits=null; }   // the homes texture is the only reader; the sampled cell objects must not outlive it
+  for(const s of scenes){ s.visitCount=s.visits?s.visits.length:0; if(!BAKE){ s.cells=null; s.visits=null; } }   // the homes texture is the only reader; the sampled cell objects must not outlive it (?bake keeps them for bake())
   slotsOf.clear();
   const homesTex=gl.createTexture(); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,homesTex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,W,H,0,gl.RGBA,gl.FLOAT,homes);
@@ -972,7 +1085,10 @@ async function boot(D,img){
   /* the pointer feeds the light (page runtime verbatim: a lantern appears on contact — a
      held thumb lights without moving; passive, touchmove-fed on iOS) */
   const ptr={x:-9,y:-9,lag:[-9,-9],hist:[],active:0,s:0};
+  const LIGHT_FIXED=scenes.some(s=>s.rest&&s.fixed);   // 0.2.7: the pointer never moves the light
+  API.light=()=>[ptr.x,ptr.y,ptr.s];                     // QA: the light's place (clip space) and strength
   function feedPtr(e){
+    if(LIGHT_FIXED) return;
     const r=canvas.getBoundingClientRect(); if(r.width<1||r.height<1) return;
     const x=(e.clientX-r.left)/r.width*2-1, y=1-(e.clientY-r.top)/r.height*2;
     const t=performance.now();

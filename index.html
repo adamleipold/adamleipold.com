@@ -59,7 +59,7 @@
   #glyph-hero canvas{display:block;width:100%;height:100%;outline:none}
   #glyph-hero canvas:focus-visible{outline:3px solid rgba(233,201,130,.7);outline-offset:-3px}
   /* no WebGL2 (or a failed boot): the painting itself, dimmed, and the words unchanged */
-  #glyph-fallback{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32;filter:saturate(.8)}
+  #glyph-fallback{display:none;position:absolute;inset:0;width:100%;height:100%;opacity:.32}   /* the runtime's plain-canvas fallback (no WebGL) */
   html.glyph-failed #glyph-fallback{display:block}
   html.glyph-failed .replay{display:none}
   [data-still]{display:none}
@@ -150,8 +150,9 @@
 <body>
 
 <div id="glyph-hero">
-  <img id="glyph-fallback" src="/images/jesus-in-prayer-web-1200.jpg"
-       alt="Oil painting of Jesus seated in prayer on the Mount of Olives at night: the moon through clouds, cypresses, and Jerusalem lit below.">
+  <!-- no photograph of the painting is served (Adam: "I don't want the Jesus image downloaded"):
+       the marks come baked (artwork.baked); if WebGL is unavailable the runtime paints them
+       once on a plain canvas here (#glyph-fallback), dim, behind the words -->
 </div>
 
 <main>
@@ -173,8 +174,7 @@
     <div class="block">
       <p><span data-live>his face whole, the city he is looking at and the temple far off in
         it, the moon, the purple of the robe. The color is the painting's own; the sparseness
-        is the point. Move your pointer, or your thumb, and light spills out from under
-        it.</span><span data-still>His face, the city he is looking at and the temple far off
+        is the point. The light rests on the moon.</span><span data-still>His face, the city he is looking at and the temple far off
         in it, the moon, the purple of the robe — the painting itself, since this browser
         could not raise the field of marks.</span></p>
       <!-- the verse (Adam: "a Bible verse will do"): the garden, the friends asleep, the
