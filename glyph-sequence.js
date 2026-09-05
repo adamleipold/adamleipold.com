@@ -764,9 +764,11 @@ async function boot(D,source){
      stars as given) and a flight lasts duty × period — so a slow, sparse exchange is a SMALL duty
      on a LONG clock. The Jesus page ran 0.06 / 0.05 on 16 s: ~3,600 marks and ~450 stars on
      0.7 s darts at any moment, which on a large screen read as "swarms of dots that dance like
-     bugs" (Adam, r13); it now runs 0.015 / 0.02 on 400 s: ~900 marks and ~180 stars on 3–6 s
-     arcs. The period's ceiling is 900 s. QA: ?exchange=marks,stars,period,reach overrides the
-     document for the eye (?exchange=0: none); GlyphSequence.exchange reports what runs. */
+     bugs" (Adam, r13); 0.015 / 0.02 on 400 s (~900 marks and ~180 stars on 3–6 s arcs) was
+     "slower, but … still there and look like flies" (Adam, r14) — a mark in flight is a tiny
+     white tumbling dot whatever its tempo — so since r15 the page runs NONE at rest. The
+     period's ceiling is 900 s. QA: ?exchange=marks,stars,period,reach overrides the document
+     for the eye (?exchange=0: none); GlyphSequence.exchange reports what runs. */
   let EX_M=num(EX.marks,0,0,1,'motion.exchange.marks'), EX_S=num(EX.stars,0,0,1,'motion.exchange.stars'),
       EX_P=num(EX.period,16,2,900,'motion.exchange.period'), EX_R=num(EX.reach,1,0,1,'motion.exchange.reach');
   { const qx=Q.get('exchange');

@@ -40,8 +40,8 @@
       "max": 0.18
     },
     "exchange": {
-      "marks": 0.015,
-      "stars": 0.02,
+      "marks": 0,
+      "stars": 0,
       "period": 400,
       "reach": 0.6
     }
