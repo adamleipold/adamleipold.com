@@ -45,6 +45,13 @@
   *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:auto}
   ::selection{background:rgba(233,201,130,.34);color:#0B1020}
+  /* the type grows with the viewport on a wide screen (Adam, on his big monitor: "the text
+     should be much bigger") — 16px up to 1000px wide, so a phone or a tablet reads exactly as
+     before and the narrow layout the runtime measures is untouched; 1.2vw beyond that, capped
+     at 34px (a 1440 window reads at 22px, a 1920 one at 28px, a 2000 one at 29px — Adam:
+     "bigger font definitely"); everything the words are made of is in rem / em / ch, so the
+     block, its halo, the verse and the credit scale together */
+  html{font-size:clamp(16px,3px + 1.3vw,34px)}
   body{background:var(--night);color:var(--ink);font:400 1.06rem/1.7 var(--serif);overflow-x:hidden}
 
   /* the field — fixed behind everything; the runtime appends its canvas here */
@@ -68,7 +75,7 @@
      breakpoint and shifts the painting the other way) */
   .scene{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;
     padding:0 var(--gutter-r) 0 var(--gutter-l)}
-  .block{max-width:34ch;background:var(--ground);border-radius:18px;box-shadow:0 0 48px 30px var(--field);padding:.3rem .5rem}
+  .block{max-width:34ch;background:var(--ground);border-radius:1.1em;box-shadow:0 0 3em 1.9em var(--field);padding:.3rem .5rem}
   .block .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--robe);margin-bottom:.7rem}
   .block .eyebrow b{font-weight:400;color:var(--gold)}
   .block h1,.block h2{font-weight:400;font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.15;color:var(--ink);text-wrap:balance;margin-bottom:.8rem}
