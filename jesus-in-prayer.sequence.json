@@ -1,6 +1,6 @@
 {
   "spec": "glyph-sequence/0.2",
-  "engine": "glyph3d-sequence-0.2.5",
+  "engine": "glyph3d-sequence-0.2.6",
   "created": "2026-09-04",
   "artwork": {
     "src": "/images/jesus-in-prayer-web-1200.jpg",
@@ -61,6 +61,10 @@
         "luma": 0.45,
         "edges": 0.45,
         "vignette": 0.12,
+        "extend": {
+          "left": 0.3,
+          "scatter": 0.5
+        },
         "regions": [
           {
             "shape": "ellipse",
