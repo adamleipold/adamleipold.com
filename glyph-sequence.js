@@ -16,7 +16,9 @@
    the camera still; 0.2.2: on a phone the painting fits the band above its
    words and holds while they scroll past, and the reader's light rests on
    an authored point — the moon — whenever no pointer is on the page;
-   0.2.3: the painting lifts slowly as the rest of its words scroll past).
+   0.2.3: the painting lifts slowly as the rest of its words scroll past;
+   0.2.4: on a phone the words' scroll dissolves the painting, slowly, all
+   the way to the cloud — the flight spans the words' leaving, then waits).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -55,7 +57,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.3';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.4';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -804,7 +806,7 @@ async function boot(D,img){
     note('[data-scene="'+id+'"] names no scene in the sequence — shown as "'+scenes[fallbackK].id+'"'); return fallbackK; });
   if(!stepEls.length) note('no [data-scene] elements — the field holds "'+scenes[fallbackK].id+'"');
   const narrowMQ=matchMedia('(max-width:760px)');     // the SAME breakpoint as the page's CSS column layout
-  let steps=stepScene.length?stepScene.slice():[0], anchors=[0], skippedSaid=new Set();
+  let steps=stepScene.length?stepScene.slice():[0], anchors=[0], spans=[], skippedSaid=new Set();
   /* 0.2 (narrow): the top of the first scene's block of words, in document pixels, is the
      line the painting stands on (stepView fits the painting above it) and the line every
      later block of scene words seats its top on at its anchor — the words never climb the
@@ -812,19 +814,20 @@ async function boot(D,img){
   let wordsLine=-1, liftK=-1;   // liftK: the step of the last block of scene words — the lift starts at its anchor
   function measure(){
     const V=probe.offsetHeight||innerHeight, narrow=narrowMQ.matches;
-    const live=[], anc=[];
+    const live=[], anc=[], leave=[];
     wordsLine=-1; liftK=-1;
     stepEls.forEach((el,i)=>{
       if(!el.isConnected||el.getClientRects().length===0){
         if(!skippedSaid.has(i)){ skippedSaid.add(i); note('[data-scene="'+el.dataset.scene+'"] has no layout box (display:none?) — left out of the timeline'); }
         return; }
       const r=el.getBoundingClientRect(), b=narrow?el.querySelector('.block'):null, marks=scenes[stepScene[i]].kind!=='stars';
-      let a;
+      let a, lv=0;
       if(b){ const rb=b.getBoundingClientRect(), top=rb.top+scrollY;
-        if(marks&&!DOC01){ if(wordsLine<0) wordsLine=top; a=top-wordsLine; liftK=live.length; }
+        if(marks&&!DOC01){ if(wordsLine<0) wordsLine=top; a=top-wordsLine; liftK=live.length;
+          lv=wordsLine+rb.height+0.5*V; }        // the scroll past its anchor until the block has left, plus half a screen
         else a=top+rb.height/2-V*0.72; }
       else a=r.top+r.height/2+scrollY-V/2;
-      live.push(stepScene[i]); anc.push(a); });
+      live.push(stepScene[i]); anc.push(a); leave.push(lv); });
     if(!live.length){ live.push(fallbackK); anc.push(0); }
     // every anchor inside the reachable scroll range, strictly increasing, the last one reachable
     const max=Math.max(0,document.documentElement.scrollHeight-innerHeight), n=anc.length;
@@ -833,12 +836,20 @@ async function boot(D,img){
     if(anc[n-1]>max){ anc[n-1]=max; for(let i=n-2;i>=0;i--) anc[i]=Math.min(anc[i],anc[i+1]-1); }
     if(live.length!==steps.length||live.some((k,i)=>k!==steps[i])){ steps=live; key=clamp(key,0,steps.length-1); if(forcedKey!==null) forcedKey=clamp(forcedKey,0,steps.length-1); }
     anchors=anc;
+    /* 0.2.4 (narrow): where a scene's block of words leaves the screen for the stars, the
+       flight spans the words' leaving plus half a screen of dissipation — never past the
+       stars' anchor — so their scroll dissolves the painting completely and slowly, and the
+       key then waits at the stars until the universe's words arrive. 0 = an ordinary gap */
+    spans=anc.map((a,k)=>{ if(k>=n-1) return 0;
+      return (leave[k]>0&&scenes[live[k]].kind!=='stars'&&scenes[live[k+1]].kind==='stars')?Math.min(anc[k+1]-a,leave[k]):0; });
   }
   function targetKey(){
     if(forcedKey!==null) return forcedKey;
     const s=scrollY, A=anchors, n=A.length;
     if(n<2||s<=A[0]) return 0;
     for(let k=0;k<n-1;k++) if(s<A[k+1]){
+      if(spans[k]>0){ const u=Math.min(1,(s-A[k])/spans[k]);           // the words' leaving: a short hold, then the whole span
+        return k+smooth(clamp((u-0.12)/0.88,0,1)); }
       const u=(s-A[k])/(A[k+1]-A[k]);
       return k+smooth(clamp((u-HOLD)/(1-2*HOLD),0,1)); }
     return n-1;
