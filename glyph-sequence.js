@@ -13,7 +13,9 @@
    fly in from the stars on load, the face whole, the painting thinned by
    what is lit and what differs — never by an outline — the stars colored
    from the painting's sky and orbiting behind him, the city's lights alive,
-   the camera still).
+   the camera still; 0.2.2: on a phone the painting fits the band above its
+   words and holds while they scroll past, and the reader's light rests on
+   an authored point — the moon — whenever no pointer is on the page).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -52,7 +54,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.1';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.2';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -359,7 +361,7 @@ function start(D){
 /* ---------- sampling: one scene of the sequence → its kept marks in Hilbert order ---------- */
 function starsScene(sc,k){
   const id=(sc&&sc.id)||'stars';
-  return {id,label:(sc&&sc.label)||id,kind:'stars',count:0,cells:[],visits:[],pitch:0,width:0,gw:0,gh:0,depth:0,hole:null,
+  return {id,label:(sc&&sc.label)||id,kind:'stars',count:0,cells:[],visits:[],pitch:0,width:0,gw:0,gh:0,depth:0,hole:null,rest:null,
           height:num(sc&&sc.height,2.6,0.2,20,'scene "'+id+'" height')};
 }
 /* 0.2: stars.palette {crop} — the ambient field colored from a crop of the artwork (a sky),
@@ -536,7 +538,15 @@ function sampleScene(img,sc,rampN,chars,fillDef){
     const k=sc.keepOut, g=(k&&typeof k==='object')?[k.cx,k.cy,k.rx,k.ry]:null;
     if(!g||!g.every(v=>typeof v==='number'&&Number.isFinite(v))||k.rx<=0||k.ry<=0) note(who+'keepOut needs finite cx, cy and positive rx, ry (image pixels) — no keep-out');
     else hole={x:((k.cx-x0)/cw-0.5)*gw*pitch, y:(0.5-(k.cy-y0)/ch)*gh*pitch, rx:k.rx/cw*gw*pitch, ry:k.ry/ch*gh*pitch}; }
-  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:kept.length,cells:kept,visits,depth,hole};
+  /* 0.2: light [x, y] (image pixels) — where the reader's light rests while no pointer is on
+     the page (a phone; a mouse that left): the moon. World units of the scene. Malformed →
+     reported, none. */
+  let rest=null;
+  if(sc.light!==undefined&&sc.light!==null){
+    const L=sc.light;
+    if(!Array.isArray(L)||L.length!==2||!L.every(v=>typeof v==='number'&&Number.isFinite(v))) note(who+'light needs [x, y] (image pixels) — the light rests nowhere');
+    else rest={x:((L[0]-x0)/cw-0.5)*gw*pitch, y:(0.5-(L[1]-y0)/ch)*gh*pitch}; }
+  return {id:sc.id,label:sc.label||sc.id,kind:'marks',gw,gh,pitch,height,width:gw*pitch,count:kept.length,cells:kept,visits,depth,hole,rest};
 }
 
 const nextTask=()=>new Promise(r=>setTimeout(r,0));
@@ -779,6 +789,7 @@ async function boot(D,img){
      each end (HOLD of the gap) so a scene stands whole while its words are centered and
      every mark has landed before the next flight begins. An element with no layout box
      (display:none, detached) is left out of the timeline and said so, once. */
+  const hasRest=scenes.some(s=>!!s.rest);          // 0.2: some scene authors where the light rests
   const byId=new Map(scenes.map((s,k)=>[s.id,k]));
   const starsK=scenes.findIndex(s=>s.kind==='stars'), fallbackK=starsK>=0?starsK:0;
   const stepEls=[...document.querySelectorAll('[data-scene]')];
@@ -787,16 +798,24 @@ async function boot(D,img){
   if(!stepEls.length) note('no [data-scene] elements — the field holds "'+scenes[fallbackK].id+'"');
   const narrowMQ=matchMedia('(max-width:760px)');     // the SAME breakpoint as the page's CSS column layout
   let steps=stepScene.length?stepScene.slice():[0], anchors=[0], skippedSaid=new Set();
+  /* 0.2 (narrow): the top of the first scene's block of words, in document pixels, is the
+     line the painting stands on (stepView fits the painting above it) and the line every
+     later block of scene words seats its top on at its anchor — the words never climb the
+     painting where the reader stops. −1 = wide layout or a 0.1 document: the fixed fit. */
+  let wordsLine=-1;
   function measure(){
     const V=probe.offsetHeight||innerHeight, narrow=narrowMQ.matches;
     const live=[], anc=[];
+    wordsLine=-1;
     stepEls.forEach((el,i)=>{
       if(!el.isConnected||el.getClientRects().length===0){
         if(!skippedSaid.has(i)){ skippedSaid.add(i); note('[data-scene="'+el.dataset.scene+'"] has no layout box (display:none?) — left out of the timeline'); }
         return; }
-      const r=el.getBoundingClientRect(), b=narrow?el.querySelector('.block'):null;
+      const r=el.getBoundingClientRect(), b=narrow?el.querySelector('.block'):null, marks=scenes[stepScene[i]].kind!=='stars';
       let a;
-      if(b){ const rb=b.getBoundingClientRect(); a=rb.top+rb.height/2+scrollY-V*0.72; }
+      if(b){ const rb=b.getBoundingClientRect(), top=rb.top+scrollY;
+        if(marks&&!DOC01){ if(wordsLine<0) wordsLine=top; a=top-wordsLine; }
+        else a=top+rb.height/2-V*0.72; }
       else a=r.top+r.height/2+scrollY-V/2;
       live.push(stepScene[i]); anc.push(a); });
     if(!live.length){ live.push(fallbackK); anc.push(0); }
@@ -884,7 +903,7 @@ async function boot(D,img){
   addEventListener('touchmove',e=>{ const t=e.touches[0]; if(t) feedPtr(t); },{passive:true});
   addEventListener('touchend',e=>{ if(e.touches.length===0) ptr.active=0; },{passive:true});
   addEventListener('touchcancel',()=>{ ptr.active=0; },{passive:true});
-  document.documentElement.addEventListener('mouseleave',()=>{ ptr.active=0; ptr.x=-9; ptr.y=-9; });
+  document.documentElement.addEventListener('mouseleave',()=>{ ptr.active=0; if(!hasRest){ ptr.x=-9; ptr.y=-9; } });
 
   /* the intro. At boot the stars gather from a far scatter (uIntro) and, when the page opens
      on a scene of marks, the marks fly in from the stars (introF runs the stars → scene
@@ -913,10 +932,19 @@ async function boot(D,img){
      column beside the words on the wide layout, the top on the narrow one), with a
      margin on its far edge; the star field fits by height only */
   const tf=Math.tan(22.5*Math.PI/180);
+  let bandB=0;   // 0.2 (narrow): the painting's floor as a fraction of the canvas height, from the top (0 = the fixed fit)
   function stepView(k,ar,narrow){
     const s=scenes[k], stars=s.kind==='stars';
-    const ax=stars?0:(narrow?0:0.3), ay=stars?0:(narrow?0.17:0);
     const wH=s.height, wW=stars?0:s.width;
+    if(!stars&&narrow&&bandB>0){
+      /* the painting fits the band from just under the top edge down to the line its words
+         stand on, so the rocks end above the words instead of under them; nearly the full
+         width, a small side margin. The stars keep their fit: the flight's far end is the same */
+      const top=0.035, availH=bandB-top, cy=(top+bandB)/2;
+      const dist=clamp(Math.max(wH/(2*tf*availH),1.08*wW/(2*tf*ar)),0.7,12);
+      const worldH=2*tf*dist;
+      return {dist,shift:[0,(1-2*cy)*worldH/2,0],pitch:s.pitch}; }
+    const ax=stars?0:(narrow?0:0.3), ay=stars?0:(narrow?0.17:0);
     const dist=clamp(1.12*Math.max(wH/(2*tf*(1-ay)),wW/(2*tf*ar*(1-ax))),0.7,12);
     const worldH=2*tf*dist, worldW=worldH*ar;
     return {dist,shift:[ax*worldW/2,ay*worldH/2,0],pitch:s.pitch};
@@ -937,6 +965,7 @@ async function boot(D,img){
 
   const R=new Float32Array(9);
   let t0=0,lastT=0, measuredAt=0, rmWas=prm.matches, drewOnce=false;
+  const pd={s:-1,x:0,y:0,lx:0,ly:0};                       // the light as last drawn (the rest gate)
   function draw(t){
     if(dead) return;
     requestAnimationFrame(draw);
@@ -977,6 +1006,7 @@ async function boot(D,img){
     const kA=clamp(Math.floor(key),0,steps.length-1), kB=Math.min(kA+1,steps.length-1);
     let sA=steps[kA], sB=steps[kB], f=key-kA;
     // the camera stays where the key is; only the homes the shader reads change for the fly-in
+    { const H=canvas.clientHeight||innerHeight; bandB=(wordsLine>0&&narrowMQ.matches)?clamp((wordsLine-0.02*H)/H,0.35,0.95):0; }
     const vA=stepView(sA,canvas.width/canvas.height,narrowMQ.matches), vB=flyingIn?vA:stepView(sB,canvas.width/canvas.height,narrowMQ.matches);
     if(flyingIn){ sB=sA; sA=starsK; f=introF; }             // the same view at both ends: only the homes the shader reads change
     syncReplay();
@@ -990,17 +1020,6 @@ async function boot(D,img){
       rot.yaw*=Math.pow(0.35,dt/1000); rot.pitch*=Math.pow(0.35,dt/1000); }
     if(Math.abs(rot.vy)<1e-4) rot.vy=0; if(Math.abs(rot.vp)<1e-4) rot.vp=0;              // the decays settle (sub-pixel at any resolution)
     if(!RM){ if(Math.abs(rot.yaw)<1e-4&&!rot.vy) rot.yaw=0; if(Math.abs(rot.pitch)<1e-4&&!rot.vp) rot.pitch=0; }
-    ptr.s+=((ptr.active?1:0)-ptr.s)*0.1;
-    if(Math.abs(ptr.s-(ptr.active?1:0))<5e-4) ptr.s=ptr.active?1:0;
-
-    /* the rest gate (reduced motion only): when nothing that reaches the GPU changed since
-       the last drawn frame, the previous frame stands — no clear, no 35k-instance draw at
-       display rate for a bit-identical image */
-    const moving=!drewOnce||resized||rmChanged||introStart>=0||fadeStart>=0||key!==target||drag||
-                 rot.vy!==0||rot.vp!==0||ptr.s>0||forcedKey!==null;
-    if(RM&&!moving) return;
-    drewOnce=true;
-
     const cy=Math.cos(rot.yaw),sy=Math.sin(rot.yaw),cp=Math.cos(rot.pitch),spp=Math.sin(rot.pitch);
     // R = Ry(yaw)·Rx(pitch), column-major
     R[0]=cy; R[1]=0; R[2]=-sy; R[3]=sy*spp; R[4]=cp; R[5]=cy*spp; R[6]=sy*cp; R[7]=-spp; R[8]=cy*cp;
@@ -1013,6 +1032,36 @@ async function boot(D,img){
     const eye=[dist*Math.cos(pitch)*Math.sin(yaw),dist*Math.sin(pitch),dist*Math.cos(pitch)*Math.cos(yaw)];
     const P=perspective(45*Math.PI/180,ar,0.05,60);
     const MVP=mul(P,lookAt(eye,[0,0,0],[0,1,0]));
+
+    /* 0.2: the rest of the light — with no pointer on the page (a phone; a mouse that left)
+       the reader's light stands on the scene's authored point (the moon), placed by this
+       frame's camera exactly as the shader places the marks (uRot, then the step's shift,
+       then uMVP); it glides there from where the pointer left and fades with the scene as
+       the marks fly out or arrive. A pointer on the page always wins. */
+    let restOn=0;
+    if(hasRest&&!ptr.active){
+      const at=(k,v)=>{ const r=scenes[k].rest; if(!r) return null;
+        const wx=R[0]*r.x+R[3]*r.y+v.shift[0], wy=R[1]*r.x+R[4]*r.y+v.shift[1], wz=R[2]*r.x+R[5]*r.y+v.shift[2];
+        const cw=MVP[3]*wx+MVP[7]*wy+MVP[11]*wz+MVP[15]; if(cw<1e-6) return null;
+        return [(MVP[0]*wx+MVP[4]*wy+MVP[8]*wz+MVP[12])/cw,(MVP[1]*wx+MVP[5]*wy+MVP[9]*wz+MVP[13])/cw]; };
+      const a=at(sA,vA), b=at(sB,vB), p=ef<0.5?(a||b):(b||a);
+      if(p){ restOn=(a&&b)?1:(a?1-ef:ef);
+        if(ptr.x<-5){ ptr.x=p[0]; ptr.y=p[1]; }
+        else { const g=Math.min(1,dt/220); ptr.x+=(p[0]-ptr.x)*g; ptr.y+=(p[1]-ptr.y)*g; }
+        ptr.lag=[ptr.x,ptr.y]; ptr.hist.length=0; } }
+    const want=ptr.active?1:restOn;
+    ptr.s+=(want-ptr.s)*0.1;
+    if(Math.abs(ptr.s-want)<5e-4) ptr.s=want;
+
+    /* the rest gate (reduced motion only): when nothing that reaches the GPU changed since
+       the last drawn frame, the previous frame stands — no clear, no 35k-instance draw at
+       display rate for a bit-identical image. The light counts when it MOVED or changed
+       strength, not merely because it is lit: a resting light is a still image */
+    const ptrMoved=ptr.s!==pd.s||ptr.x!==pd.x||ptr.y!==pd.y||ptr.lag[0]!==pd.lx||ptr.lag[1]!==pd.ly;
+    const moving=!drewOnce||resized||rmChanged||introStart>=0||fadeStart>=0||key!==target||drag||
+                 rot.vy!==0||rot.vp!==0||ptrMoved||forcedKey!==null;
+    if(RM&&!moving) return;
+    drewOnce=true; pd.s=ptr.s; pd.x=ptr.x; pd.y=ptr.y; pd.lx=ptr.lag[0]; pd.ly=ptr.lag[1];
     /* the keep-out this frame: the scene's, placed by its view; while a scene is arriving
        it opens once most marks are down (the face lands around 0.7–0.85 of the flight), and
        while one is leaving it holds until most have gone — so a star never slips over a face
