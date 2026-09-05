@@ -1,0 +1,128 @@
+{
+  "spec": "glyph-sequence/0.2",
+  "engine": "glyph3d-sequence-0.2.1",
+  "created": "2026-09-04",
+  "artwork": {
+    "src": "/images/jesus-in-prayer-web-1200.jpg",
+    "name": "Jesus in Prayer",
+    "alt": "Oil painting of Jesus seated in prayer on the Mount of Olives at night, looking out over Jerusalem and the temple far off under a moon through clouds, rendered as a field of small glowing marks."
+  },
+  "style": "tiles",
+  "ramp": ".,:;-~i+=lvtcxou*aeksSCOZ8%B#@",
+  "stars": {
+    "count": 9000,
+    "size": 0.0075,
+    "orbit": 200,
+    "palette": {
+      "crop": [
+        0,
+        0,
+        650,
+        560
+      ]
+    }
+  },
+  "motion": {
+    "spread": 0.45,
+    "spin": 1,
+    "arc": 1,
+    "hold": 0.3,
+    "introMs": 4600,
+    "breath": 0,
+    "sparkle": 0,
+    "shimmer": 0,
+    "wake": 0.5,
+    "fill": 0.9,
+    "turn": false,
+    "exchange": {
+      "marks": 0.06,
+      "stars": 0.05,
+      "period": 16,
+      "reach": 1
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene",
+      "label": "The scene",
+      "across": 600,
+      "height": 1.5,
+      "depth": 0,
+      "density": {
+        "base": 0.04,
+        "luma": 0.45,
+        "edges": 0.45,
+        "vignette": 0.12,
+        "regions": [
+          {
+            "shape": "ellipse",
+            "cx": 820,
+            "cy": 800,
+            "rx": 310,
+            "ry": 600,
+            "weight": 0.25,
+            "feather": 0.6,
+            "contrast": 0.12
+          },
+          {
+            "shape": "ellipse",
+            "cx": 815,
+            "cy": 325,
+            "rx": 125,
+            "ry": 155,
+            "weight": 1.0,
+            "feather": 1.1,
+            "contrast": 0.14,
+            "fill": 1.12
+          },
+          {
+            "shape": "ellipse",
+            "cx": 600,
+            "cy": 825,
+            "rx": 100,
+            "ry": 60,
+            "weight": 0.7,
+            "feather": 0.8,
+            "contrast": 0.12
+          },
+          {
+            "shape": "ellipse",
+            "cx": 310,
+            "cy": 270,
+            "rx": 65,
+            "ry": 45,
+            "weight": 0.85,
+            "feather": 1.4,
+            "contrast": 0.08
+          },
+          {
+            "shape": "ellipse",
+            "cx": 260,
+            "cy": 880,
+            "rx": 215,
+            "ry": 130,
+            "weight": 0.55,
+            "feather": 1.0,
+            "contrast": 0.1,
+            "glint": 1
+          },
+          {
+            "shape": "ellipse",
+            "cx": 185,
+            "cy": 740,
+            "rx": 30,
+            "ry": 21,
+            "weight": 0.9,
+            "feather": 2.0,
+            "contrast": 0.035
+          }
+        ]
+      }
+    },
+    {
+      "id": "stars",
+      "kind": "stars",
+      "height": 2.6
+    }
+  ]
+}

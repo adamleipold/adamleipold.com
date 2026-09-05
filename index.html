@@ -2,29 +2,153 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Adam Leipold</title>
-<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jesus in Prayer — From the Stars | Adam Leipold</title>
+<link rel="canonical" href="https://adamleipold.com/">
 <link rel="icon" href="data:,">
+<meta name="description" content="Jesus in Prayer as a living field of marks: the painting thinned to what matters, gathered from the stars, and returned to them as you scroll.">
+<!-- =====================================================================
+  EDIT THIS FILE FREELY — this page is the content; the copy here is a
+  placeholder until Adam's words arrive.
+  The living field behind it is painted by /glyph-sequence.js from
+  /jesus-in-prayer.sequence.json (a glyph-sequence/0.2 document: the
+  artwork, the scene as a density rule over the painting, the sky palette
+  of the stars, the motion; the face is whole, so the stars simply pass
+  behind it — no keep-out). The page's
+  [data-scene] elements, in document order, ARE the timeline: the first
+  screen holds the painting; the section below is the universe the marks
+  fly out to. Hooks the runtime fills: data-replay (flies the marks out and
+  in again), data-kept="scene" / data-grid="scene" (the cells kept of the
+  cells sampled), data-motion (the reduced-motion chip), data-live /
+  data-still (a sentence for the living field and its replacement when the
+  field could not be raised).
+  Deploy: copy index.html, glyph-sequence.js, the .sequence.json and the
+  JPEG (the artwork sampled and the fallback are the same file, one download)
+  to any static host (the runtime is a self-hosted classic script — no
+  inline JS, CSP-friendly). Serve over http(s).
+====================================================================== -->
 <style>
-  html { color-scheme: dark; }
-  body {
-    margin: 0;
-    min-height: 100svh;
-    display: grid;
-    place-items: center;
-    background: #05060E;
-    color: #8291AC;
-    font: 300 0.9rem/1.6 system-ui, -apple-system, sans-serif;
-    letter-spacing: .02em;
+  /* the painting's own world: night, moon gold, the robe's purple */
+  :root{
+    --night:#070B18;
+    --field:rgba(5,8,18,.6);         /* the halo around the block */
+    --ground:rgba(5,8,18,.72);       /* the block itself: the field shows through, the words stay readable */
+    --ink:#E8ECF5;
+    --muted:#97A0B5;
+    --gold:#E9C982;
+    --robe:#9B7BD0;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --gutter-l:max(6vw,1.4rem,env(safe-area-inset-left));
+    --gutter-r:max(6vw,1.4rem,env(safe-area-inset-right));
   }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:auto}
+  ::selection{background:rgba(233,201,130,.34);color:#0B1020}
+  body{background:var(--night);color:var(--ink);font:400 1.06rem/1.7 var(--serif);overflow-x:hidden}
+
+  /* the field — fixed behind everything; the runtime appends its canvas here */
+  #glyph-hero{position:fixed;inset:0;z-index:0;background:var(--night)}
+  #glyph-hero canvas{display:block;width:100%;height:100%;outline:none}
+  #glyph-hero canvas:focus-visible{outline:3px solid rgba(233,201,130,.7);outline-offset:-3px}
+  /* no WebGL2 (or a failed boot): the painting itself, dimmed, and the words unchanged */
+  #glyph-fallback{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32;filter:saturate(.8)}
+  html.glyph-failed #glyph-fallback{display:block}
+  html.glyph-failed .replay{display:none}
+  [data-still]{display:none}
+  html.glyph-failed [data-still]{display:inline}
+  html.glyph-failed [data-live]{display:none}
+
+  /* the scroll runway — the words; the field is reached through the gaps */
+  main{position:relative;z-index:2;pointer-events:none}
+  main a,main button,.block{pointer-events:auto}
+
+  /* the first screen holds the painting: the words sit beside it on a wide viewport and
+     below it on a narrow one (the runtime keys its column layout to this same 760px
+     breakpoint and shifts the painting the other way) */
+  .scene{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+    padding:0 var(--gutter-r) 0 var(--gutter-l)}
+  .block{max-width:34ch;background:var(--ground);border-radius:18px;box-shadow:0 0 48px 30px var(--field);padding:.3rem .5rem}
+  .block .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--robe);margin-bottom:.7rem}
+  .block .eyebrow b{font-weight:400;color:var(--gold)}
+  .block h1,.block h2{font-weight:400;font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.15;color:var(--ink);text-wrap:balance;margin-bottom:.8rem}
+  .block p{color:var(--ink)}
+  .block p+p{margin-top:.8rem}
+  .block b{font-weight:400;color:var(--gold)}
+  .block em{color:var(--gold);font-style:italic}
+  .block .hint{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:1rem}
+  /* the artwork's credit sits with the artwork: the painter, the year, whose collection */
+  .block .credit{font-family:var(--mono);font-size:.7rem;line-height:1.6;color:var(--muted);margin-top:1rem}
+  .block .credit b{font-weight:400;color:var(--ink)}
+  .block .hint::after{content:'↓';display:inline-block;margin-left:.6em;animation:drift 2.4s ease-in-out infinite}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(.45em)}}
+  @media (prefers-reduced-motion:reduce){.block .hint::after{animation:none}}
+  /* the runtime's decision (device or ?motion=) wins over the media query, both ways */
+  html[data-glyph-motion="reduced"] .block .hint::after{animation:none}
+  html[data-glyph-motion="full"] .block .hint::after{animation:drift 2.4s ease-in-out infinite}
+  @media (max-width:760px){
+    .scene{justify-content:flex-end;padding-bottom:8vh}
+    .block{max-width:none}
+  }
+
+  /* the universe: a long, quiet runway so the flight out has room, then a few words */
+  .end{min-height:150vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+    text-align:center;padding:0 var(--gutter-r) 0 var(--gutter-l)}
+  .end .block{max-width:40ch}
+  .end h2{font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.2;color:var(--gold);margin-bottom:.6rem}
+  footer{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;line-height:1.8;color:var(--muted);max-width:52ch}
+  footer a{color:var(--muted)}
+
+  /* fixed chrome: replay, the motion chip */
+  .replay{position:fixed;right:max(1rem,env(safe-area-inset-right));bottom:max(1rem,env(safe-area-inset-bottom));z-index:3;
+    width:2.6rem;height:2.6rem;border-radius:50%;border:1px solid rgba(151,160,181,.45);background:rgba(5,8,18,.6);
+    color:var(--ink);font:400 1.1rem/1 var(--serif);cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .replay:hover,.replay:focus-visible{border-color:var(--gold);color:var(--gold);outline:none}
+  .chip{position:fixed;left:max(1rem,env(safe-area-inset-left));bottom:max(1rem,env(safe-area-inset-bottom));z-index:3;
+    font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    background:rgba(5,8,18,.6);border:1px solid rgba(151,160,181,.35);border-radius:999px;padding:.4rem .7rem;pointer-events:auto}
+  .chip[hidden]{display:none}
 </style>
 </head>
 <body>
-  <!-- Holding page. The UI was deliberately removed 2026-08-10 and stays
-       gone until Adam has something he wants to publish here. Assets,
-       palette, fonts, the painting pipeline and the writing sources all
-       remain in the repo. Nothing here is a design. -->
-  <p>Adam Leipold</p>
+
+<div id="glyph-hero">
+  <img id="glyph-fallback" src="/images/jesus-in-prayer-web-1200.jpg"
+       alt="Oil painting of Jesus seated in prayer on the Mount of Olives at night: the moon through clouds, cypresses, and Jerusalem lit below.">
+</div>
+
+<main>
+  <section class="scene" data-scene="scene">
+    <div class="block">
+      <p class="eyebrow">Jesus in Prayer · <b>from the stars</b></p>
+      <h1>The whole painting, thinned to what matters.</h1>
+      <p><span data-live><b><span data-kept="scene">—</span></b> marks stand in for
+        <span data-grid="scene">—</span> cells: his face whole, the city he is looking at
+        and the temple far off in it, the moon, the purple of the robe. The color is the
+        painting's own; the sparseness is the point. Move your pointer, or your thumb, and
+        light spills out from under it.</span><span data-still>The painting itself stands
+        behind these words: this browser could not raise the field of marks. The words are
+        the same.</span></p>
+      <p class="credit"><b>Jesus in Prayer</b> — Alton S. Tobey (1963)<br>Original painting from the collection of Adam Leipold.</p>
+      <p class="hint">scroll</p>
+    </div>
+  </section>
+
+  <section class="end" data-scene="stars">
+    <div class="block">
+      <h2>Every mark is back among the stars.</h2>
+      <p><span data-live>Scroll up and the painting gathers again.</span><span data-still>The painting stays where it is: this browser could not raise the field of marks.</span></p>
+      <footer>Jesus in Prayer — Alton S. Tobey (1963) · original painting from the
+        collection of Adam Leipold · sampled live in this page from the painting ·
+        glyph-sequence/0.2 · the flight follows your scroll; the field honors your
+        reduced-motion setting; the pointer light stays.<br>© 2026 Adam Leipold</footer>
+    </div>
+  </section>
+</main>
+
+<button class="replay" type="button" data-replay aria-label="Fly the marks in again" title="Fly in again" disabled>↻</button>
+<div class="chip" data-motion hidden>motion: reduced by device</div>
+
+<script src="/glyph-sequence.js" data-sequence="/jesus-in-prayer.sequence.json" defer></script>
 </body>
 </html>

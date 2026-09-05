@@ -2,6 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/jesus-in-prayer-from-the-stars", "destination": "/" }
+  ],
   "headers": [
     {
       "source": "/fonts/(.*)",
