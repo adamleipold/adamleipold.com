@@ -1,6 +1,6 @@
 {
   "spec": "glyph-sequence/0.2",
-  "engine": "glyph3d-sequence-0.2.8",
+  "engine": "glyph3d-sequence-0.2.9",
   "created": "2026-09-04",
   "artwork": {
     "baked": "/jesus-in-prayer.marks.json",
@@ -40,10 +40,10 @@
       "max": 0.18
     },
     "exchange": {
-      "marks": 0.06,
-      "stars": 0.05,
-      "period": 16,
-      "reach": 1
+      "marks": 0.015,
+      "stars": 0.02,
+      "period": 400,
+      "reach": 0.6
     }
   },
   "scenes": [

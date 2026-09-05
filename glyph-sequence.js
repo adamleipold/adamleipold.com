@@ -31,7 +31,9 @@
    GlyphSequence.bake(); and scene.lightFixed keeps the light at its rest —
    the pointer never moves it; 0.2.8: artwork.guard — the field is not an
    image to save: no pointer events on the canvas, no context menu or drag
-   over the hero).
+   over the hero; 0.2.9: the exchange's clock may run to 900 s and
+   ?exchange=marks,stars,period,reach overrides it for the eye — a slow,
+   sparse exchange is a small duty on a long clock).
 
    The scenes are sampled HERE, from the artwork, when the page loads: each
    scene names a crop of the painting, a grid width, and a density rule (a
@@ -70,7 +72,7 @@ const SCRIPT=document.currentScript;
 const SEQ_URL=(SCRIPT&&SCRIPT.dataset.sequence)||'./jesus-in-prayer.sequence.json';
 /* 0.2 is additive over 0.1: stars.orbit / stars.palette, scene.keepOut, region fill / glint,
    motion.turn — a 0.1 document reads exactly as before */
-const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.8';
+const SPECS=['glyph-sequence/0.1','glyph-sequence/0.2'], SPEC=SPECS[SPECS.length-1], ENGINE='glyph3d-sequence-0.2.9';
 /* the document's spec, once read: 0.1 keeps its linear feather and its whole-intro star gather */
 let DOC01=false;
 // the phone budget measured on the living page (174,720 instances at 56–60 fps on Adam's
@@ -758,8 +760,20 @@ async function boot(D,source){
   // reach: how far out a leaving mark goes (1 = all the way to its place in the cloud)
   const EX=(MO.exchange&&typeof MO.exchange==='object')?MO.exchange:{};
   if(MO.exchange!==undefined&&MO.exchange!==null&&typeof MO.exchange!=='object') note('motion.exchange is not an object — no exchange');
-  const EX_M=num(EX.marks,0,0,1,'motion.exchange.marks'), EX_S=num(EX.stars,0,0,1,'motion.exchange.stars'),
-        EX_P=num(EX.period,16,2,120,'motion.exchange.period'), EX_R=num(EX.reach,1,0,1,'motion.exchange.reach');
+  /* 0.2.9: the exchange's tempo. The share in flight is the duty (marks × a mark's restlessness;
+     stars as given) and a flight lasts duty × period — so a slow, sparse exchange is a SMALL duty
+     on a LONG clock. The Jesus page ran 0.06 / 0.05 on 16 s: ~3,600 marks and ~450 stars on
+     0.7 s darts at any moment, which on a large screen read as "swarms of dots that dance like
+     bugs" (Adam, r13); it now runs 0.015 / 0.02 on 400 s: ~900 marks and ~180 stars on 3–6 s
+     arcs. The period's ceiling is 900 s. QA: ?exchange=marks,stars,period,reach overrides the
+     document for the eye (?exchange=0: none); GlyphSequence.exchange reports what runs. */
+  let EX_M=num(EX.marks,0,0,1,'motion.exchange.marks'), EX_S=num(EX.stars,0,0,1,'motion.exchange.stars'),
+      EX_P=num(EX.period,16,2,900,'motion.exchange.period'), EX_R=num(EX.reach,1,0,1,'motion.exchange.reach');
+  { const qx=Q.get('exchange');
+    if(qx!==null){ const v=qx.split(',').map(Number);
+      if(v.length===1&&v[0]===0){ EX_M=0; EX_S=0; }
+      else if(v.length===4&&v.every(Number.isFinite)){ EX_M=clamp(v[0],0,1); EX_S=clamp(v[1],0,1); EX_P=clamp(v[2],2,900); EX_R=clamp(v[3],0,1); } } }
+  API.exchange=[EX_M,EX_S,EX_P,EX_R];
 
   const host=document.getElementById('glyph-hero')||document.body;
   const canvas=document.createElement('canvas'); liveCanvas=canvas;
