@@ -87,19 +87,17 @@
   /* the artwork's credit sits with the artwork: the painter, the year, whose collection */
   .block .credit{font-family:var(--mono);font-size:.7rem;line-height:1.6;color:var(--muted);margin-top:1rem}
   .block .credit b{font-weight:400;color:var(--ink)}
-  /* the hold: a wordless step of the same scene — the painting alone once the words have
-     gone above it; the flight to the stars begins only past it. A screen on the narrow
-     layout, nothing on the wide one (there the words sit beside the painting) */
-  .scene.hold{min-height:0;height:0;padding:0}
   @media (max-width:760px){
     .scene{justify-content:flex-end;padding-bottom:8vh}
     .block{max-width:none}
-    .scene.hold{min-height:100vh;min-height:100svh}
   }
 
   /* the universe: a long, quiet runway so the flight out has room, then a few words */
   .end{min-height:150vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
     text-align:center;padding:0 var(--gutter-r) 0 var(--gutter-l)}
+  /* a longer runway on a phone (after the base rule, so it wins): the words' leaving
+     dissolves the painting slowly into the cloud before the universe's words arrive */
+  @media (max-width:760px){ .end{min-height:200vh;min-height:200svh} }
   .end .block{max-width:40ch}
   .end h2{font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.2;color:var(--gold);margin-bottom:.6rem}
   footer{margin-top:2.4rem;font-family:var(--mono);font-size:.72rem;line-height:1.8;color:var(--muted);max-width:52ch}
@@ -135,8 +133,9 @@
     </div>
   </section>
 
-  <!-- the rest of the words: the same scene, so the painting holds while they scroll up
-       under it (on a phone this block seats its top on the same line as the first) -->
+  <!-- the rest of the words: the same scene, so the painting holds while the first block
+       scrolls up; on a phone this block seats its top on the same line as the first, and
+       its own scroll off the screen is what dissolves the painting into the stars -->
   <section class="scene more" data-scene="scene">
     <div class="block">
       <p><span data-live>his face whole, the city he is looking at and the temple far off in
@@ -148,10 +147,6 @@
       <p class="credit"><b>Jesus in Prayer</b> — Alton S. Tobey (1963)<br>Original painting from the collection of Adam Leipold.</p>
     </div>
   </section>
-
-  <!-- the hold: the painting alone once every word has scrolled above it; the flight to
-       the stars begins only past this step (a step of the same scene never flies) -->
-  <section class="scene hold" data-scene="scene" aria-hidden="true"></section>
 
   <section class="end" data-scene="stars">
     <div class="block">
