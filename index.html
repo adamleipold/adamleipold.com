@@ -84,6 +84,32 @@
   /* the runtime's decision (device or ?motion=) wins over the media query, both ways */
   html[data-glyph-motion="reduced"] .block .hint::after{animation:none}
   html[data-glyph-motion="full"] .block .hint::after{animation:drift 2.4s ease-in-out infinite}
+  /* the lines that keep the reader a minute at the seated words: one at a time, each comes
+     in from the right, holds, and wipes off to the left; the next follows; they loop while
+     the reader stays. They start when the runtime marks the step (class glyph-here on the
+     section) and vanish when the reader leaves it. One line's height, so the block never
+     reflows. Still under reduced motion (the last line stands); the last line stands when
+     the field could not be raised */
+  .block .wipe{position:relative;height:3.3em;margin-top:.9rem;padding:0;list-style:none;overflow:hidden}
+  .block .wipe li{position:absolute;left:0;right:0;top:0;color:var(--gold);font-style:italic;font-size:.98em;line-height:1.55;opacity:0;transform:translateX(28px);transition:opacity .45s ease} /* the transition softens the line's exit when the reader scrolls on */
+  .block .wipe li.ref{font-style:normal;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);line-height:2.2}
+  /* four lines, five seconds each: in over the first fifth of a line's turn, held, wiped over the last fifth */
+  .scene.glyph-here .wipe li{animation:wipe 20s linear infinite}
+  .scene.glyph-here .wipe li:nth-child(2){animation-delay:5s}
+  .scene.glyph-here .wipe li:nth-child(3){animation-delay:10s}
+  .scene.glyph-here .wipe li:nth-child(4){animation-delay:15s}
+  @keyframes wipe{
+    0%{opacity:0;transform:translateX(28px);clip-path:inset(0 0 0 0)}
+    4%{opacity:1;transform:none;clip-path:inset(0 0 0 0)}
+    20%{opacity:1;transform:none;clip-path:inset(0 0 0 0)}
+    25%{opacity:0;transform:translateX(-44px);clip-path:inset(0 0 0 100%)}
+    100%{opacity:0;transform:translateX(28px);clip-path:inset(0 0 0 100%)}
+  }
+  @media (prefers-reduced-motion:reduce){.scene.glyph-here .wipe li{animation:none} .scene.glyph-here .wipe li:nth-child(2){opacity:1;transform:none}}
+  html[data-glyph-motion="reduced"] .scene.glyph-here .wipe li{animation:none}
+  html[data-glyph-motion="reduced"] .scene.glyph-here .wipe li:nth-child(2){opacity:1;transform:none}
+  html[data-glyph-motion="full"] .scene.glyph-here .wipe li{animation-name:wipe;animation-duration:20s;animation-timing-function:linear;animation-iteration-count:infinite} /* longhands: the shorthand would reset each line's delay */
+  html.glyph-failed .wipe li:nth-child(2){opacity:1;transform:none}
   /* the artwork's credit sits with the artwork: the painter, the year, whose collection */
   .block .credit{font-family:var(--mono);font-size:.7rem;line-height:1.6;color:var(--muted);margin-top:1rem}
   .block .credit b{font-weight:400;color:var(--ink)}
@@ -144,6 +170,15 @@
         it.</span><span data-still>His face, the city he is looking at and the temple far off
         in it, the moon, the purple of the robe — the painting itself, since this browser
         could not raise the field of marks.</span></p>
+      <!-- the verse (Adam: "a Bible verse will do"): the garden, the friends asleep, the
+           question — Matthew 26:40–41 in the King James text (public domain); the verse is
+           Adam's to change, one line each -->
+      <ul class="wipe">
+        <li>…and findeth them asleep.</li>
+        <li>What, could ye not watch with me one hour?</li>
+        <li>Watch and pray.</li>
+        <li class="ref">Matthew 26:40–41</li>
+      </ul>
       <p class="credit"><b>Jesus in Prayer</b> — Alton S. Tobey (1963)<br>Original painting from the collection of Adam Leipold.</p>
     </div>
   </section>
