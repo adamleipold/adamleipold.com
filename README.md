@@ -2,11 +2,13 @@
 
 Static HTML on Vercel, no build step.
 
-## Status — no UI, deliberately
+## Status — Jesus in Prayer — From the Stars
 
-The site's UI was removed on 2026-08-10. `index.html` is a holding page
-and nothing else is published. It stays that way until Adam has
-something he wants to publish here.
+Published 2026-09-05. `index.html` is the page: Alton S. Tobey's painting
+(1963, Adam's collection) as a living field of marks, painted on the
+reader's device by `glyph-sequence.js` from `jesus-in-prayer.sequence.json`.
+The page copy is a placeholder until Adam's words arrive. `/` is the
+canonical URL; `/jesus-in-prayer-from-the-stars` rewrites to it.
 
 Two homepage directions were built and both are retired: the
 painting-led concept D (context decision 0014) and a hand-drawn SVG
